@@ -69,7 +69,7 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
     }
 
     system_prompt = """
-    You are the central Navigation Router for NyayAssist (an Indian Legal Assistant).
+    You are the central Navigation Router for YuktiAI (an Indian Legal Assistant).
     Your job is to strictly classify the user's intent into one of the available tools 
     and extract the minimum necessary parameters.
     

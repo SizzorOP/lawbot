@@ -7,7 +7,7 @@
 
 ---
 
-# NyayAssist Blueprint
+# YuktiAI Blueprint
 
 ## A) ICP + Use Cases
 * **Primary Users:** Litigating lawyers, legal professionals, and law students in India.
@@ -68,4 +68,4 @@
 * **Observability:** Track every generated citation against the Kanoon/Web DB. If mismatched, log as critical hallucination failure.
 
 ## I) Competitive Differentiation
-* **Why this wins:** Comprehensive all-in-one suite (NyayAssist) compared to fragmented tools. The integration of a WhatsApp bot + strict Zero-Hallucination guarantee sets it apart for Indian practitioners.
+* **Why this wins:** Comprehensive all-in-one suite (YuktiAI) compared to fragmented tools. The integration of a WhatsApp bot + strict Zero-Hallucination guarantee sets it apart for Indian practitioners.

@@ -1,7 +1,7 @@
 # Findings
 
 - **Discovery Completed (2026-02-27):** 
-  - **North Star:** Best partner/assistant for an Indian Lawyer (NyayAssist style suite).
+  - **North Star:** Best partner/assistant for an Indian Lawyer (YuktiAI style suite).
   - **Core Features:** Case Management, Research, Drafting, Document Storage, Document Processor (translations/summaries), Meeting Intelligence, Legal Library, Calendar, WhatsApp.
   - **Integrations Available:** Indian Kanoon API, SerpAPI (Web Search), WhatsApp Business API.
   - **Data Sources:** Local PDFs, Kanoon, Web Search.

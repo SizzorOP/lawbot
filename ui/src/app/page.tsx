@@ -1,65 +1,114 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { SearchBar } from "@/components/SearchBar";
+import { MessageList } from "@/components/MessageList";
+import { ChatMessage } from "@/types";
+import { Scale } from "lucide-react";
 
 export default function Home() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const hasStarted = messages.length > 0;
+
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) return;
+
+    // Add user message
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: query
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query })
+      });
+
+      if (!res.ok) throw new Error("API Request Failed");
+
+      const data = await res.json();
+
+      const aiMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.message || "Here are your results:",
+        metadata: {
+          type: data.route,
+          results: data.result?.results || data.result // Adapt based on exact backend shape
+        }
+      };
+
+      setMessages(prev => [...prev, aiMsg]);
+    } catch (err) {
+      const errorMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Sorry, I encountered an error communicating with the YuktiAI backend. Please make sure the FastAPI server is running."
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-100 selection:bg-blue-200 dark:selection:bg-blue-900">
+
+      {/* Header (conditionally rendered or styled if chat has started) */}
+      <header className={`fixed top-0 inset-x-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-all duration-500 flex items-center justify-between px-6 
+        ${hasStarted ? 'h-16 opacity-100 translate-y-0' : 'h-0 opacity-0 -translate-y-full pointer-events-none'}`}>
+        <div className="flex items-center gap-2 font-bold text-lg tracking-tight">
+          <Scale className="w-6 h-6 text-blue-600" />
+          <span>YuktiAI<span className="text-blue-600">.</span></span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      {/* Main Container */}
+      <div className={`flex flex-col mx-auto px-4 transition-all duration-700 ease-in-out w-full
+        ${hasStarted ? 'pt-24 items-start max-w-5xl h-[calc(100vh-6rem)]' : 'justify-center items-center h-screen'}`}>
+
+        {/* Empty State / Logo */}
+        {!hasStarted && (
+          <div className="flex flex-col items-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-blue-200">
+              <Scale className="w-8 h-8 text-blue-600" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-center">
+              What are you researching?
+            </h1>
+            <p className="text-lg text-zinc-500 mb-8 max-w-lg text-center">
+              Search judgments, check procedures, or ask legal questions referencing Indian Kanoon.
+            </p>
+          </div>
+        )}
+
+        <div className={`w-full transition-all duration-500 ${hasStarted ? 'mb-6 flex-1 flex flex-col min-h-0' : 'max-w-3xl translate-y-0'}`}>
+          {hasStarted && <MessageList messages={messages} />}
         </div>
-      </main>
-    </div>
+
+        <div className={`w-full transition-all duration-500 
+          ${hasStarted ? 'fixed bottom-0 inset-x-0 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent dark:from-zinc-950 dark:via-zinc-950 pb-6 pt-10 px-4 z-40' : ''}`}>
+          <div className={hasStarted ? "max-w-4xl mx-auto w-full" : "w-full"}>
+            <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+          </div>
+
+          {!hasStarted && (
+            <div className="mt-8 flex items-center justify-center gap-3 text-sm text-zinc-500 animate-in fade-in duration-1000 delay-300">
+              <span className="flex items-center gap-1.5"><kbd className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 font-mono text-xs">Enter</kbd> to search</span>
+              <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
+              <span>Powered by <span className="text-zinc-700 dark:text-zinc-300 font-medium">GPT-4o</span></span>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }

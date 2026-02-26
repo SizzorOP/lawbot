@@ -1,7 +1,7 @@
 # Progress Log
 
 - **2026-02-27**: 
-  - Phase 1 (Blueprint) Discovery completed based on User input matching "NyayAssist" core features (Professionals, Students, Case Management, Research, Drafting, Document Storage, Processor, Meeting Intel, Legal Library, Calendar, WhatsApp).
+  - Phase 1 (Blueprint) Discovery completed based on User input matching "YuktiAI" core features (Professionals, Students, Case Management, Research, Drafting, Document Storage, Processor, Meeting Intel, Legal Library, Calendar, WhatsApp).
   - Defined Data Schemas (Input/Output Payloads) in `gemini.md`.
   - Updated `task_plan.md` with complete blueprint, integrating Indian Kanoon, WhatsApp, and Web Search under strict zero-hallucination rules.
   - Phase 2 (Link/Connectivity verification) completed with 200 OK tests.

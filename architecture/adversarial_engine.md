@@ -35,6 +35,6 @@ Simulate an opposing counsel examining a legal draft (e.g., Written Statement, B
 *   **Irrelevant Documents:** If a user uploads a grocery list, the system must immediately reject it with: `"status": "error", "message": "Document does not appear to be a legal draft."`
 *   **LLM Hallucinations:** The prompt must explicitly command: `"DO NOT invent case names. If you cannot remember the exact Supreme Court case name, merely suggest referencing the applicable statute section."`
 
-## Strict Rules (Golden Rule of NyayAssist)
+## Strict Rules (Golden Rule of YuktiAI)
 *   **The System MUST NEVER suggest altering facts, evading summons, or hiding evidence.** Any detection of such intent in the draft must trigger an immediate refusal.
 *   Must be deterministic in the API call (Temperature = 0.2 to minimize creative hallucination, preferring strict analytical logic).

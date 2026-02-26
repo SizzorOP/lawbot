@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
@@ -10,7 +11,16 @@ from tools.adversarial_engine import analyze_draft
 from tools.procedural_navigator import get_procedural_timeline
 from tools.document_processor import process_legal_document
 
-app = FastAPI(title="NyayAssist API", description="Backend for the Lawbot Assistant")
+app = FastAPI(title="YuktiAI API", description="Backend for the Lawbot Assistant")
+
+# Added CORS middleware to fix frontend request errors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class QueryRequest(BaseModel):
     query: str
@@ -19,7 +29,7 @@ class QueryRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "online", "message": "NyayAssist API is running."}
+    return {"status": "online", "message": "YuktiAI API is running."}
 
 @app.post("/api/query")
 def process_query(request: QueryRequest):
@@ -81,5 +91,5 @@ def process_query(request: QueryRequest):
         raise HTTPException(status_code=500, detail=f"An error occurred while processing the request: {str(e)}")
 
 if __name__ == "__main__":
-    print("Starting NyayAssist API Server...")
+    print("Starting YuktiAI API Server...")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

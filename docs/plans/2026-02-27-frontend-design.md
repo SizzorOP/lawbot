@@ -1,10 +1,10 @@
-# Next.js Frontend Design: NyayAssist (Lawbot)
+# Next.js Frontend Design: YuktiAI (Lawbot)
 
 **Date**: 2026-02-27
 **Topic**: Frontend Architecture & UI Design (Option A: Pure Search)
 
 ## 1. Overview & Aesthetic
-The web application will serve as the primary interface for Lawbot ("NyayAssist"). Based on the user's requirement for a "Glean-style minimalistic design" and the `brand-identity` guidelines, we have opted for Option A: **The Pure Search**.
+The web application will serve as the primary interface for Lawbot ("YuktiAI"). Based on the user's requirement for a "Glean-style minimalistic design" and the `brand-identity` guidelines, we have opted for Option A: **The Pure Search**.
 
 The UI will be drastically simple:
 *   **Initial State:** A large, centered search bar with subtle branding. No clutter, no complex sidebars.

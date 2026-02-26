@@ -1,7 +1,7 @@
 # Technical SOP: WhatsApp API Incoming & Outgoing
 
 ## Goal
-Provide a seamless interface for lawyers to query NyayAssist or upload documents via WhatsApp.
+Provide a seamless interface for lawyers to query YuktiAI or upload documents via WhatsApp.
 
 ## Inputs
 *   `payload` (JSON): The incoming webhook payload from Meta Graph API. Contains sender phone number, message type (text/document/audio), and content.
