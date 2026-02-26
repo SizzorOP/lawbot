@@ -40,6 +40,7 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
                             "web_search", 
                             "adversarial_engine", 
                             "procedural_navigator",
+                            "document_processor",
                             "unknown"
                         ],
                         "description": "The specific tool this query should be routed to."
@@ -51,7 +52,9 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
                             "query": {"type": "string"},
                             "case_stage": {"type": "string"},
                             "law_code": {"type": "string"}
-                        }
+                        },
+                        "required": ["query", "case_stage", "law_code"],
+                        "additionalProperties": False
                     },
                     "reasoning": {
                         "type": "string",
@@ -75,7 +78,8 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
     2. 'web_search': For general legal news or recent amendments not on Kanoon. (Requires 'query')
     3. 'procedural_navigator': For asking about timelines, limitation periods, or next steps (Requires 'case_stage' and 'law_code').
     4. 'adversarial_engine': For stress-testing documents. 
-    5. 'unknown': If it's conversational filler or outside legal scope.
+    5. 'document_processor': For processing, summarizing, translating, or extracting timelines from uploaded legal documents or raw text logs. (Requires 'query' to hold the document text).
+    6. 'unknown': If it's conversational filler or outside legal scope.
     """
 
     try:

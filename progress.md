@@ -15,3 +15,6 @@
   - Built `tools/adversarial_engine.py` using strict OpenAI JSON Schema to enforce "Cite-or-Abstain" and output actionable objections.
   - Built `tools/procedural_navigator.py` utilizing a deterministic MVP core dictionary for safety, augmented by OpenAI JSON Schema for edge cases.
   - Created Layer 2 Navigation (`navigation/router.py`) passing natural language queries through OpenAI JSON routing to output `target_tool` and `extracted_kwargs`.
+  - Fixed OpenAI JSON schema for Nested properties in the `router` causing 500 API errors.
+  - Implemented Document Processor MVP (`architecture/document_processor.md`, `tools/document_processor.py`) capable of strict timeline extraction and summarization on raw text.
+  - Wired Document processor safely into `main.py` via the Layer 2 router framework. Tested via `test_document_processor.py`.

@@ -8,6 +8,7 @@ from tools.legal_search import legal_search
 from tools.web_search import web_search
 from tools.adversarial_engine import analyze_draft
 from tools.procedural_navigator import get_procedural_timeline
+from tools.document_processor import process_legal_document
 
 app = FastAPI(title="NyayAssist API", description="Backend for the Lawbot Assistant")
 
@@ -62,6 +63,12 @@ def process_query(request: QueryRequest):
                  return {"route": "procedural_navigator", "error": "Could not extract case stage or law code from the query. Please be more specific."}
             result = get_procedural_timeline(stage, code)
             return {"route": "procedural_navigator", "result": result}
+            
+        elif target_tool == "document_processor":
+            document_text = kwargs.get("query", raw_query)
+            doc_type = request.document_type or "legal_document"
+            result = process_legal_document(document_text, doc_type)
+            return {"route": "document_processor", "result": result}
             
         elif target_tool == "unknown":
             return {"route": "unknown", "message": "I am an AI Legal Assistant. The query seems outside my scope or unclear. Please rephrase."}
