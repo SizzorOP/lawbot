@@ -41,6 +41,7 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
                             "adversarial_engine", 
                             "procedural_navigator",
                             "document_processor",
+                            "general_chat",
                             "unknown"
                         ],
                         "description": "The specific tool this query should be routed to."
@@ -73,13 +74,45 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
     Your job is to strictly classify the user's intent into one of the available tools 
     and extract the minimum necessary parameters.
     
-    Tools Details:
-    1. 'legal_search': For finding case laws, judgments, or sections on Indian Kanoon. (Requires 'query' to be a CONCISE boolean keyword string. Use ONLY the core legal concepts like sections, acts, and core legal issues. Example: Section 438 CrPC economic offence anticipatory bail. Never include conversational words or intents like find, judgments, conflicting, views, recent, etc.)
-    2. 'web_search': For general legal news or recent amendments not on Kanoon. (Requires 'query')
-    3. 'procedural_navigator': For asking about timelines, limitation periods, or next steps (Requires 'case_stage' and 'law_code').
-    4. 'adversarial_engine': For stress-testing documents. 
-    5. 'document_processor': For processing, summarizing, translating, or extracting timelines from uploaded legal documents or raw text logs. (Requires 'query' to hold the document text).
-    6. 'unknown': If it's conversational filler or outside legal scope.
+    ROUTING RULES (follow this decision tree strictly):
+
+    1. 'legal_search': ONLY when the user wants to FIND or SEARCH for specific case laws, 
+       judgments, or court orders from Indian Kanoon database. 
+       The 'query' MUST be a CONCISE boolean keyword string using only core legal concepts:
+       sections, acts, and legal issues. Example: Section 438 CrPC anticipatory bail economic offence.
+       NEVER include conversational words like find, explain, what is, judgments, views, recent.
+
+    2. 'general_chat': For ALL of these:
+       - Explaining a legal concept or section (e.g., "Explain Section 482 CrPC")
+       - Answering questions about limitation periods, legal rights, remedies
+       - Client-facing or simple-language explanations
+       - Questions about whether a section/case exists (hallucination detection)
+       - Tactical legal advice (e.g., "My client missed the appeal deadline, what remedy?")
+       - Interpreting or comparing legal principles
+       - Questions about fake or non-existent sections/cases
+       - Any question that needs an EXPLANATION rather than a database search
+       Set 'query' to the full original user question.
+
+    3. 'adversarial_engine': When the user provides a DOCUMENT, DRAFT, or DETAILED CASE FACTS 
+       and asks to stress-test, review, find weaknesses, generate opposing arguments, or 
+       identify procedural risks. Also use for criminal defense simulations.
+       Set 'query' to the full text/facts provided.
+
+    4. 'procedural_navigator': When asking about specific procedural TIMELINES, NEXT STEPS, 
+       or LIMITATION PERIODS tied to a specific stage in litigation. 
+       Extract 'case_stage' and 'law_code'.
+
+    5. 'web_search': ONLY for queries about recent legal NEWS, amendments, or developments 
+       that would not be on Indian Kanoon. Set 'query' to a search-engine-friendly string.
+
+    6. 'document_processor': When the user provides raw legal document TEXT and asks for 
+       summarization, translation, timeline extraction, or bullet-point extraction.
+       Set 'query' to the document text.
+
+    7. 'unknown': ONLY if the query is completely unrelated to law (e.g., weather, sports).
+    
+    IMPORTANT: When in doubt between legal_search and general_chat, prefer general_chat.
+    legal_search is ONLY for finding specific cases in the Kanoon database.
     """
 
     try:
@@ -102,7 +135,9 @@ if __name__ == "__main__":
     test_queries = [
         "Find me judgments on Section 138 NI Act with compounding",
         "What is the limitation limit for filing a written statement in a commercial suit under CPC?",
-        "Fetch the latest news on Bharatiya Nyaya Sanhita amendments"
+        "Fetch the latest news on Bharatiya Nyaya Sanhita amendments",
+        "Explain Section 482 CrPC in simple language for a client.",
+        "Explain Section 999 IPC.",
     ]
     
     print("Testing Router Logic...")

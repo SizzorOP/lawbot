@@ -10,6 +10,7 @@ from tools.web_search import web_search
 from tools.adversarial_engine import analyze_draft
 from tools.procedural_navigator import get_procedural_timeline
 from tools.document_processor import process_legal_document
+from tools.general_chat import general_chat
 
 app = FastAPI(title="YuktiAI API", description="Backend for the Lawbot Assistant")
 
@@ -46,13 +47,20 @@ def process_query(request: QueryRequest):
         route_info = map_intent_to_tool(raw_query)
         target_tool = route_info.get("target_tool")
         kwargs = route_info.get("extracted_kwargs", {})
+        reasoning = route_info.get("reasoning", "")
         
+        print(f"DEBUG: Route={target_tool} | Reasoning={reasoning}")
+
         # Step 2: Execute Corresponding Tool
         if target_tool == "legal_search":
             search_term = kwargs.get("query", raw_query)
-            print(f"DEBUG: Kanoon Search Term extracted -> {search_term}")
+            print(f"DEBUG: Kanoon Search Term -> {search_term}")
             result = legal_search(search_term)
             return {"route": "legal_search", "search_term_used": search_term, "result": result}
+            
+        elif target_tool == "general_chat":
+            result = general_chat(raw_query)
+            return {"route": "general_chat", "result": result}
             
         elif target_tool == "web_search":
             search_term = kwargs.get("query", raw_query)
@@ -60,7 +68,6 @@ def process_query(request: QueryRequest):
             return {"route": "web_search", "result": result}
             
         elif target_tool == "adversarial_engine":
-            # For testing via simple text input. In a real scenario, the document would be passed explicitly.
             draft_text = kwargs.get("query", raw_query)
             doc_type = request.document_type or "Legal Document"
             jurisdiction = request.jurisdiction or "Indian Court"
@@ -82,13 +89,12 @@ def process_query(request: QueryRequest):
             return {"route": "document_processor", "result": result}
             
         elif target_tool == "unknown":
-            return {"route": "unknown", "message": "I am an AI Legal Assistant. The query seems outside my scope or unclear. Please rephrase."}
+            return {"route": "unknown", "message": "I am YuktiAI, an AI Legal Assistant. This query seems outside my scope. I can help with Indian legal research, case law search, procedural timelines, document analysis, and legal explanations."}
             
         else:
             raise HTTPException(status_code=500, detail=f"Unrecognized routing logic target: {target_tool}")
 
     except Exception as e:
-        # Catch-all for API errors, LLM execution errors, or Kanoon/SerpAPI failures
         raise HTTPException(status_code=500, detail=f"An error occurred while processing the request: {str(e)}")
 
 if __name__ == "__main__":
