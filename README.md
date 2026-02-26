@@ -1,6 +1,6 @@
-# LawBOT
+# YuktiAI
 
-LawBOT is a multi-agent legal intelligence system designed for Indian litigation practice.
+YuktiAI is a multi-agent legal intelligence system designed for Indian litigation practice.
 
 It follows an OpenClaw-style architecture with specialized agents, deterministic tools, and hallucination-safe design principles.
 
@@ -79,109 +79,152 @@ These additions make LawBOT usable end‑to‑end without requiring any Node.js 
 
 ---
 
-## Running Locally
+## 1) Go to your project folder
 
-```bash
-cd lawbot_runtime
-python main.py research_agent legal-research --query "habeas corpus"
+```
+cd /d C:\Automation\lawbot
+```
 
-# LawBOT – Environment & Setup Requirements
+## 2) Activate the venv (CMD way)
 
-This repo contains:
-- `lawbot_runtime/` – a minimal OpenClaw-like runtime (CLI) that loads agent workspaces from `lawbot/`.
-- `lawbot/` – agent workspaces (`research_agent`, `drafting_agent`, `case_agent`) and skill definitions.
+```
+.venv\Scripts\activate.bat
+```
 
-## Prerequisites
+You should now see something like:
 
-- Python **3.10+** (recommended 3.11)
-- `pip` (comes with Python)
+```
+(.venv) C:\Automation\lawbot>
+```
 
-## Install
+## 3) Install backend dependencies
 
-From the repository root:
+First check your requirements file name. In your screenshot it looks like it might be `requirements` (without `.txt`). Run:
 
-```bash
+```
+dir
+```
+
+If you see `requirements.txt`, run:
+
+```
+pip install -r requirements.txt
+```
+
+If you only see `requirements` (no .txt), run:
+
+```
+pip install -r requirements
+```
+
+## 4) Confirm your OpenAI key is set
+
+You have a `.env` file, but CMD won’t automatically load it unless your code calls `load_dotenv()`.
+
+So, for certainty, set it in CMD for this session:
+
+```
+set OPENAI_API_KEY=YOUR_KEY_HERE
+```
+
+(Replace with your actual key)
+
+## 5) Start FastAPI backend
+
+Your file in screenshot is `main` (python source). That usually means `main.py`.
+
+Run:
+
+```
+uvicorn main:app --reload
+```
+
+Expected:
+
+- Backend at `http://127.0.0.1:8000`
+- Docs at `http://127.0.0.1:8000/docs`
+
+---
+
+## 6) Start frontend (in a second CMD window)
+
+Open another Command Prompt:
+
+```
+cd /d C:\Automation\lawbot\ui
+npm install
+npm run dev
+```
+
+Expected:
+
+- Frontend at `http://localhost:3000`
+
+### **PROBABLE ERRORS**
+
+## 1) Deactivate venv
+
+```
+deactivate
+```
+
+(if it says not recognized, ignore)
+
+## 2) Delete the broken venv
+
+```
+rmdir /s /q .venv
+```
+
+## 3) Recreate venv
+
+```
 python -m venv .venv
 ```
 
-### Windows (Command Prompt)
+## 4) Activate again
 
-```bat
-.venv\Scripts\activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+```
+.venv\Scripts\activate.bat
 ```
 
-### Windows (PowerShell)
+## 5) Upgrade pip tools (prevents weirdness)
 
-If you get an “execution policy” error when activating the venv:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+python -m pip install --upgrade pip setuptools wheel
 ```
 
-Then:
+## 6) Install requirements (use python -m pip, not pip)
 
-```powershell
-.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+```
+python -m pip install -r requirements.txt
 ```
 
-### macOS / Linux
+That should install cleanly.
 
-```bash
-source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+---
+
+# Then run the backend
+
+Make sure you have `.env` (not just `.env.example`). If you only have `.env.example`, copy it:
+
+```
+copy .env.example .env
 ```
 
-## Indian Kanoon API Token (Required for legal research)
+Edit `.env` and put your key:
 
-The `legal_search` tool calls the Indian Kanoon API and requires a token.
-
-Set this environment variable **before** running any legal research:
-
-```bash
-export INDIAN_KANOON_TOKEN="YOUR_TOKEN_HERE"
+```
+OPENAI_API_KEY=...
 ```
 
-On Windows (Command Prompt):
+Then run:
 
-```bat
-set INDIAN_KANOON_TOKEN=YOUR_TOKEN_HERE
+```
+uvicorn main:app --reload
 ```
 
-On Windows (PowerShell):
+Open:
 
-```powershell
-$env:INDIAN_KANOON_TOKEN="YOUR_TOKEN_HERE"
-```
-
-> Keep your token private. Do **not** commit it to GitHub.
-
-Optional: create a `.env` file (not committed) and load it in your shell manually.
-A sample file is provided as `.env.example`.
-
-## Run
-
-### Citation checker
-
-```bash
-python lawbot_runtime/main.py drafting_agent citation_checker --citations "AIR 1967 SC 1643; (1973) 4 SCC 225; random text"
-```
-
-### Legal research
-
-```bash
-python lawbot_runtime/main.py research_agent legal-research --query "section 482 crpc inherent powers"
-```
-
-If your token is set correctly, you should see a list of results with `doc_id`, `title`, and `link`.
-
-## Troubleshooting
-
-- If you see `RuntimeError: INDIAN_KANOON_TOKEN is not set`, set the env var as shown above.
-- If `pip install -r requirements.txt` fails, ensure you are in the repo root (same folder as `requirements.txt`).
-- If PowerShell blocks activation, use the execution-policy command shown above.
+- `http://127.0.0.1:8000/docs`
 
