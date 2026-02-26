@@ -50,8 +50,9 @@ def process_query(request: QueryRequest):
         # Step 2: Execute Corresponding Tool
         if target_tool == "legal_search":
             search_term = kwargs.get("query", raw_query)
+            print(f"DEBUG: Kanoon Search Term extracted -> {search_term}")
             result = legal_search(search_term)
-            return {"route": "legal_search", "result": result}
+            return {"route": "legal_search", "search_term_used": search_term, "result": result}
             
         elif target_tool == "web_search":
             search_term = kwargs.get("query", raw_query)

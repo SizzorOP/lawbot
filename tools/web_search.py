@@ -31,7 +31,13 @@ def web_search(query: str, num_results: int = 3) -> List[Dict[str, str]]:
     """
     api_key = os.getenv("SERPAPI_KEY")
     if not api_key:
-        raise AuthError("SERPAPI_KEY is not set in the environment.")
+        return [
+            {
+                "title": "Search Unavailable",
+                "link": "",
+                "snippet": "SerpAPI key is missing in the environment. Web search is currently disabled."
+            }
+        ]
 
     url = "https://serpapi.com/search"
     params = {
