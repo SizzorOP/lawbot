@@ -7,8 +7,8 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
     if (messages.length === 0) return null;
 
     return (
-        <ScrollArea className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-6 mb-24">
-            <div className="flex flex-col gap-6 w-full pb-10">
+        <ScrollArea className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-6 mb-32 h-full">
+            <div className="flex flex-col gap-6 w-full pb-32">
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex w-full gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         {msg.role === 'assistant' && (
@@ -20,8 +20,8 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
                         <div className={`flex flex-col ${msg.role === 'user' ? 'items-end max-w-[85%]' : 'items-start w-full'}`}>
                             <div
                                 className={`py-3 px-5 rounded-2xl shadow-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-blue-600 text-white rounded-br-sm'
-                                        : 'bg-transparent text-zinc-800 dark:text-zinc-200 rounded-bl-sm w-full'
+                                    ? 'bg-blue-600 text-white rounded-br-sm'
+                                    : 'bg-transparent text-zinc-800 dark:text-zinc-200 rounded-bl-sm w-full'
                                     }`}
                             >
                                 {msg.role === 'assistant' && msg.metadata ? (

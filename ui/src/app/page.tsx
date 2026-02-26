@@ -90,12 +90,12 @@ export default function Home() {
           </div>
         )}
 
-        <div className={`w-full transition-all duration-500 ${hasStarted ? 'mb-6 flex-1 flex flex-col min-h-0' : 'max-w-3xl translate-y-0'}`}>
+        <div className={`w-full transition-all duration-500 overflow-hidden ${hasStarted ? 'mb-24 flex-1 flex flex-col min-h-0' : 'max-w-3xl translate-y-0'}`}>
           {hasStarted && <MessageList messages={messages} />}
         </div>
 
         <div className={`w-full transition-all duration-500 
-          ${hasStarted ? 'fixed bottom-0 inset-x-0 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent dark:from-zinc-950 dark:via-zinc-950 pb-6 pt-10 px-4 z-40' : ''}`}>
+          ${hasStarted ? 'fixed bottom-0 inset-x-0 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent dark:from-zinc-950 dark:via-zinc-950 pb-8 pt-12 px-4 z-40' : ''}`}>
           <div className={hasStarted ? "max-w-4xl mx-auto w-full" : "w-full"}>
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
