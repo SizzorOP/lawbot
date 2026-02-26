@@ -36,8 +36,7 @@ def legal_search(query: str, pagenum: int = 0) -> List[Dict[str, Any]]:
 
     url = "https://api.indiankanoon.org/search/"
     headers = {
-        "Authorization": f"Token {token}",
-        "Content-Type": "application/json"
+        "Authorization": f"Token {token}"
     }
     payload = {
         "formInput": query,
@@ -50,7 +49,7 @@ def legal_search(query: str, pagenum: int = 0) -> List[Dict[str, Any]]:
     for attempt in range(max_retries):
         try:
             # 15 second timeout as per SOP
-            response = requests.post(url, headers=headers, json=payload, timeout=15)
+            response = requests.post(url, headers=headers, data=payload, timeout=15)
             
             if response.status_code == 200:
                 data = response.json()
@@ -61,9 +60,10 @@ def legal_search(query: str, pagenum: int = 0) -> List[Dict[str, Any]]:
                 for doc in docs:
                     results.append({
                         "title": doc.get("title", ""),
-                        "doc_id": doc.get("docid", ""), 
-                        "snippet": doc.get("snippet", ""),
-                        "url": f"https://indiankanoon.org/doc/{doc.get('docid')}/" if doc.get("docid") else ""
+                        "doc_id": str(doc.get("tid", "")), 
+                        "snippet": doc.get("headline", ""),
+                        "docsource": doc.get("docsource", ""),
+                        "url": f"https://indiankanoon.org/doc/{doc.get('tid')}/" if doc.get("tid") else ""
                     })
                 return results
 

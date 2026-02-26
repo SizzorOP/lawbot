@@ -74,7 +74,7 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
     and extract the minimum necessary parameters.
     
     Tools Details:
-    1. 'legal_search': For finding case laws, judgments, or sections on Indian Kanoon. (Requires 'query')
+    1. 'legal_search': For finding case laws, judgments, or sections on Indian Kanoon. (Requires 'query' to be a concise keyword search string optimized for Indian Kanoon, e.g., "Section 482 CrPC quashing FIR" instead of a full sentence).
     2. 'web_search': For general legal news or recent amendments not on Kanoon. (Requires 'query')
     3. 'procedural_navigator': For asking about timelines, limitation periods, or next steps (Requires 'case_stage' and 'law_code').
     4. 'adversarial_engine': For stress-testing documents. 
