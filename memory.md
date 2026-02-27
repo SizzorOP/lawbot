@@ -1,6 +1,6 @@
 # YuktiAI (Lawbot) — Project Memory
 
-> Last updated: 2026-02-27  
+> Last updated: 2026-02-27 (Session 3 — State Management & UI Redesign)  
 > Repository: https://github.com/SizzorOP/lawbot
 
 ---
@@ -12,10 +12,12 @@
 ### Tech Stack
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 16, React 19, Tailwind CSS v4, shadcn/ui, Lucide icons |
-| Backend | FastAPI (Python), Uvicorn |
+| Frontend | Next.js 16, React 19, Tailwind CSS v4, shadcn/ui, Lucide icons, Playfair Display (serif) |
+| Backend | FastAPI (Python), Uvicorn, SQLAlchemy ORM, SQLite |
 | LLM | OpenAI GPT-4o (`gpt-4o-2024-08-06`) with structured JSON outputs |
 | APIs | Indian Kanoon API, SerpAPI (Google Search) |
+| Database | SQLite (via SQLAlchemy + aiosqlite) — swappable to PostgreSQL |
+| File Storage | Local `uploads/` directory (UUID-based naming) |
 | Deployment | Local dev (uvicorn + next dev) |
 
 ### Environment Variables Required (`.env`)
@@ -37,8 +39,9 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 1. **Architecture SOPs** (`architecture/`) — Markdown specs defining each tool's behavior
 2. **Navigation Router** (`navigation/router.py`) — GPT-4o classifies intent into 7 routes
 3. **Python Tools** (`tools/`) — Deterministic, stateless functions
+4. **State Management** (`database.py`, `models.py`, `schemas.py`, `routers/`) — SQLite-backed CRUD for cases, documents, calendar events
 
-### Routes (7 total)
+### Chat Routes (7 total)
 | Route | Tool File | Purpose |
 |---|---|---|
 | `legal_search` | `tools/legal_search.py` | Search Indian Kanoon for case laws/judgments |
@@ -49,6 +52,13 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 | `web_search` | `tools/web_search.py` | Google search via SerpAPI for news/amendments |
 | `unknown` | N/A | Rejects non-legal queries |
 
+### CRUD API Routers (3 total)
+| Router | Endpoint Prefix | Purpose |
+|---|---|---|
+| `routers/cases.py` | `/api/cases` | Case CRUD with status filtering, cascading deletes |
+| `routers/documents.py` | `/api/cases/{id}/documents` | File upload/download with UUID naming, size/type validation |
+| `routers/calendar.py` | `/api/calendar/events` | Calendar event CRUD, date-range queries, case linking |
+
 ---
 
 ## 3. Key Files
@@ -56,7 +66,13 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 ### Backend
 | File | Purpose |
 |---|---|
-| `main.py` | FastAPI app, CORS middleware, route dispatcher |
+| `main.py` | FastAPI app, CORS middleware, route dispatcher, DB init |
+| `database.py` | SQLAlchemy engine, session factory, declarative Base (SQLite) |
+| `models.py` | ORM models: `Case`, `Document`, `CalendarEvent` with relationships |
+| `schemas.py` | Pydantic request/response validation schemas |
+| `routers/cases.py` | Cases CRUD: create, list, get, update, delete (with file cleanup) |
+| `routers/documents.py` | Document upload (UUID naming), download, list, delete |
+| `routers/calendar.py` | Calendar event CRUD with date-range filtering, case linking |
 | `navigation/router.py` | GPT-4o intent classifier with 7-route decision tree |
 | `tools/general_chat.py` | Conversational LLM with cite-or-abstain rules |
 | `tools/legal_search.py` | Indian Kanoon API integration (URL-encoded form data) |
@@ -68,11 +84,27 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 ### Frontend (`ui/`)
 | File | Purpose |
 |---|---|
-| `src/app/page.tsx` | Main page: Glean-style search → chat transition |
+| `src/app/page.tsx` | Dashboard: Welcome card, Case Management, Documents Storage |
+| `src/app/research/page.tsx` | Research chat: Glean-style search → chat transition |
+| `src/app/cases/page.tsx` | Cases dashboard: search, filter by status, create case modal |
+| `src/app/cases/[id]/page.tsx` | Case detail: 3 tabs (Overview, Documents, Calendar) |
+| `src/app/calendar/page.tsx` | Calendar: date-grouped timeline, type filters, event creation |
+| `src/components/Sidebar.tsx` | Collapsible sidebar: 10 nav items, logo, user profile |
+| `src/components/AppShell.tsx` | Layout wrapper: fixed sidebar + offset main content |
+| `src/components/CaseCard.tsx` | Case summary card for dashboard grid |
+| `src/components/DocumentUpload.tsx` | Drag-and-drop file uploader with validation |
+| `src/lib/api.ts` | Typed API client for cases, documents, calendar endpoints |
 | `src/components/SearchBar.tsx` | Input bar with Enter-to-search |
 | `src/components/MessageList.tsx` | Chat thread with ScrollArea |
 | `src/components/ResultRenderer.tsx` | Route-aware renderer for all 6 result types |
 | `src/types/index.ts` | ChatMessage TypeScript interface |
+
+### Database Schema
+| Table | Key Columns |
+|---|---|
+| `cases` | id, title, case_number, client_name, court, status, description |
+| `documents` | id, case_id (FK), original_filename, stored_filename, file_type, file_size |
+| `calendar_events` | id, case_id (FK, nullable), title, event_type, event_date, location |
 
 ---
 
@@ -128,6 +160,14 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 
 5. **Graceful SerpAPI Degradation**: Missing API keys return structured mock responses instead of crashing, allowing the system to work without optional services.
 
+6. **SQLite for MVP Database**: Zero-configuration, file-based database using SQLAlchemy ORM. Swap to PostgreSQL later by changing `DATABASE_URL` in `database.py`.
+
+7. **UUID File Naming**: Uploaded documents are stored as `uploads/{case_id}/{uuid}.{ext}` to prevent filename collisions while preserving the original name in the DB.
+
+8. **Cascading Case Deletion**: Deleting a case automatically removes all associated documents (both DB records and files on disk) and calendar events.
+
+9. **Antigravity-Style UI**: Clean minimalist design with mixed typography (Playfair Display serif for headers + Geist sans for UI elements), pure white backgrounds, ultra-light borders, and blue-50 active states. Matching the reference design from nyayassist.
+
 ---
 
 ## 6. Test Results (12/12 Passed)
@@ -156,7 +196,7 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 cd C:\Automation\lawbot
 python -m venv .venv
 .venv\Scripts\activate
-pip install fastapi uvicorn openai python-dotenv requests
+pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
@@ -164,12 +204,19 @@ uvicorn main:app --reload
 ```bash
 cd C:\Automation\lawbot\ui
 npm install
-npm run dev
+npx next dev
 ```
+
+> ⚠️ **Important**: Always run `next dev` from inside the `ui/` directory, NOT the project root.
+> Running from the root causes `Can't resolve 'tailwindcss'` errors because `node_modules` lives in `ui/`.
 
 ### Access
 - Backend API: `http://localhost:8000`
 - Frontend UI: `http://localhost:3000`
+- Dashboard: `http://localhost:3000/` (homepage)
+- Research/Chat: `http://localhost:3000/research`
+- Cases: `http://localhost:3000/cases`
+- Calendar: `http://localhost:3000/calendar`
 
 ---
 
@@ -185,9 +232,40 @@ npm run dev
 
 ## 9. Known Limitations / Future Work
 
-- **No file upload**: Document processor only works with pasted text, not PDF uploads
+- ~~**No file upload**: Document processor only works with pasted text, not PDF uploads~~ ✅ **RESOLVED** — Document upload via drag-and-drop with file validation
+- ~~**No state management**: No database, no case tracking~~ ✅ **RESOLVED** — SQLite + SQLAlchemy, full CRUD for cases/docs/events
 - **No conversation memory**: Each query is independent; no multi-turn chat context
 - **No authentication**: API is open, no user sessions
 - **Single LLM provider**: Locked to OpenAI GPT-4o; no fallback to other providers
 - **No caching**: Every query hits the LLM and APIs fresh
 - **WhatsApp integration**: Planned but not yet implemented
+- **Cloud storage**: Documents stored locally in `uploads/`; needs migration to S3/GCS for production
+- **Dynamic dashboard data**: Dashboard currently shows static "No cases found" — needs API integration to show real counts
+
+---
+
+## 10. Frontend Pages (Route Map)
+
+| Route | Page | Description |
+|---|---|---|
+| `/` | Dashboard | Welcome screen, Case Management + Documents Storage overview cards |
+| `/research` | Research Chat | GPT-4o powered legal research with structured result rendering |
+| `/cases` | Cases Dashboard | Search/filter cases, create new case modal, case cards grid |
+| `/cases/[id]` | Case Detail | 3-tab view: Overview, Documents (drag-drop upload), Calendar events |
+| `/calendar` | Calendar | Date-grouped event timeline, type filters, create event modal |
+
+---
+
+## 11. Sidebar Navigation Items
+
+| Item | Route | Status |
+|---|---|---|
+| Dashboard | `/` | ✅ Active |
+| Case Management | `/cases` | ✅ Active |
+| Research | `/research` | ✅ Active |
+| Drafting | `#` | 🔲 Placeholder |
+| Document Storage | `#` | 🔲 Placeholder |
+| Document Processor | `#` | 🔲 Placeholder |
+| Meeting Assistant | `#` | 🔲 Placeholder |
+| Calendar | `/calendar` | ✅ Active |
+| Legal Library | `#` | 🔲 Placeholder |

@@ -12,6 +12,13 @@ from tools.procedural_navigator import get_procedural_timeline
 from tools.document_processor import process_legal_document
 from tools.general_chat import general_chat
 
+# Import new routers and database
+from database import engine
+from models import Base
+from routers.cases import router as cases_router
+from routers.documents import router as documents_router
+from routers.calendar import router as calendar_router
+
 app = FastAPI(title="YuktiAI API", description="Backend for the Lawbot Assistant")
 
 # Added CORS middleware to fix frontend request errors
@@ -22,6 +29,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register new API routers
+app.include_router(cases_router)
+app.include_router(documents_router)
+app.include_router(calendar_router)
+
+
+@app.on_event("startup")
+def on_startup():
+    """Create all database tables on server startup."""
+    Base.metadata.create_all(bind=engine)
+    print("Database tables created successfully.")
+
 
 class QueryRequest(BaseModel):
     query: str
@@ -100,3 +120,4 @@ def process_query(request: QueryRequest):
 if __name__ == "__main__":
     print("Starting YuktiAI API Server...")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+

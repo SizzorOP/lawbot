@@ -1,114 +1,63 @@
 "use client";
 
-import { useState } from "react";
-import { SearchBar } from "@/components/SearchBar";
-import { MessageList } from "@/components/MessageList";
-import { ChatMessage } from "@/types";
-import { Scale } from "lucide-react";
+import Link from "next/link";
+import { Download, Briefcase, FileText } from "lucide-react";
 
-export default function Home() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasStarted = messages.length > 0;
-
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) return;
-
-    // Add user message
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: query
-    };
-
-    setMessages(prev => [...prev, userMsg]);
-    setIsLoading(true);
-
-    try {
-      const res = await fetch("http://localhost:8000/api/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query })
-      });
-
-      if (!res.ok) throw new Error("API Request Failed");
-
-      const data = await res.json();
-
-      const aiMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.message || "Here are your results:",
-        metadata: {
-          type: data.route,
-          results: data.result?.results || data.result // Adapt based on exact backend shape
-        }
-      };
-
-      setMessages(prev => [...prev, aiMsg]);
-    } catch (err) {
-      const errorMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Sorry, I encountered an error communicating with the YuktiAI backend. Please make sure the FastAPI server is running."
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-100 selection:bg-blue-200 dark:selection:bg-blue-900">
-
-      {/* Header (conditionally rendered or styled if chat has started) */}
-      <header className={`fixed top-0 inset-x-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-all duration-500 flex items-center justify-between px-6 
-        ${hasStarted ? 'h-16 opacity-100 translate-y-0' : 'h-0 opacity-0 -translate-y-full pointer-events-none'}`}>
-        <div className="flex items-center gap-2 font-bold text-lg tracking-tight">
-          <Scale className="w-6 h-6 text-blue-600" />
-          <span>YuktiAI<span className="text-blue-600">.</span></span>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <div className={`flex flex-col mx-auto px-4 transition-all duration-700 ease-in-out w-full
-        ${hasStarted ? 'pt-24 items-start max-w-5xl h-[calc(100vh-6rem)]' : 'justify-center items-center h-screen'}`}>
-
-        {/* Empty State / Logo */}
-        {!hasStarted && (
-          <div className="flex flex-col items-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-blue-200">
-              <Scale className="w-8 h-8 text-blue-600" />
+export default function DashboardPage() {
+    return (
+        <div className="min-h-screen bg-white">
+            {/* Header Area */}
+            <div className="flex items-center justify-between px-8 py-10 border-b border-zinc-100/50">
+                <div>
+                    <h1 className="text-[28px] font-semibold text-zinc-900 font-serif tracking-tight mb-2">
+                        Welcome chotu lal
+                    </h1>
+                    <p className="text-[13px] text-zinc-500 font-medium">Getting started</p>
+                </div>
+                <button className="flex items-center gap-2 bg-[#2d2d2d] hover:bg-black text-white px-4 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm">
+                    <Download className="w-4 h-4" />
+                    Install App
+                </button>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3 text-center">
-              What are you researching?
-            </h1>
-            <p className="text-lg text-zinc-500 mb-8 max-w-lg text-center">
-              Search judgments, check procedures, or ask legal questions referencing Indian Kanoon.
-            </p>
-          </div>
-        )}
 
-        <div className={`w-full transition-all duration-500 overflow-hidden ${hasStarted ? 'mb-24 flex-1 flex flex-col min-h-0' : 'max-w-3xl translate-y-0'}`}>
-          {hasStarted && <MessageList messages={messages} />}
-        </div>
+            {/* Main Content Areas */}
+            <div className="p-8 max-w-5xl space-y-6">
 
-        <div className={`w-full transition-all duration-500 
-          ${hasStarted ? 'fixed bottom-0 inset-x-0 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent dark:from-zinc-950 dark:via-zinc-950 pb-8 pt-12 px-4 z-40' : ''}`}>
-          <div className={hasStarted ? "max-w-4xl mx-auto w-full" : "w-full"}>
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} />
-          </div>
+                {/* Case Management Card */}
+                <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
+                        <h2 className="text-[15px] font-bold text-zinc-900 font-serif tracking-tight">Case Management</h2>
+                        <Briefcase className="w-4 h-4 text-zinc-400" />
+                    </div>
+                    <div className="p-12 flex flex-col items-center justify-center">
+                        <p className="text-[13px] text-zinc-500 mb-6">No cases found</p>
+                        <Link
+                            href="/cases"
+                            className="text-[13px] font-semibold text-zinc-900 hover:text-blue-600 transition-colors"
+                        >
+                            Create Case
+                        </Link>
+                    </div>
+                </div>
 
-          {!hasStarted && (
-            <div className="mt-8 flex items-center justify-center gap-3 text-sm text-zinc-500 animate-in fade-in duration-1000 delay-300">
-              <span className="flex items-center gap-1.5"><kbd className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 font-mono text-xs">Enter</kbd> to search</span>
-              <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
-              <span>Powered by <span className="text-zinc-700 dark:text-zinc-300 font-medium">GPT-4o</span></span>
+                {/* Documents Storage Card */}
+                <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
+                        <h2 className="text-[15px] font-bold text-zinc-900 font-serif tracking-tight">Documents Storage</h2>
+                        <FileText className="w-4 h-4 text-zinc-400" />
+                    </div>
+                    <div className="p-12 flex flex-col items-center justify-center">
+                        <p className="text-[13px] text-zinc-500 mb-6">No documents found</p>
+                        <Link
+                            href="/cases" // Temporarily routing to cases since we upload docs inside cases
+                            className="text-[13px] font-semibold text-zinc-900 hover:text-blue-600 transition-colors"
+                        >
+                            Upload Document
+                        </Link>
+                    </div>
+                </div>
+
             </div>
-          )}
         </div>
-      </div>
-    </main>
-  );
+    );
 }
