@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
+import { MobileHeader } from "@/components/MobileHeader";
 
 const publicPaths = ["/login", "/signup", "/verify-email", "/auth/callback"];
 
@@ -41,13 +42,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="flex min-h-screen bg-white dark:bg-zinc-900 selection:bg-blue-100 selection:text-blue-900">
-            {/* Sidebar is fixed on the left */}
-            <div className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-[260px]'}`}>
+            {/* Sidebar is fixed on the left - Hidden on mobile */}
+            <div className={`hidden md:block fixed top-0 left-0 h-screen z-50 transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-[260px]'}`}>
                 <Sidebar isCollapsed={isCollapsed} toggleSidebar={() => setIsCollapsed(!isCollapsed)} />
             </div>
 
-            {/* Main content area — offset by sidebar width */}
-            <main className={`flex-1 min-h-screen transition-all duration-300 ${isCollapsed ? 'pl-[72px]' : 'pl-[260px]'}`}>
+            {/* Main content area — offset by sidebar width on desktop */}
+            <main className={`flex-1 min-h-screen transition-all duration-300 w-full md:${isCollapsed ? 'pl-[72px]' : 'pl-[260px]'} pt-16 md:pt-0`}>
+                <MobileHeader />
                 {children}
             </main>
         </div>

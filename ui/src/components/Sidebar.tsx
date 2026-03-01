@@ -40,9 +40,10 @@ const navigation = [
 export interface SidebarProps {
     isCollapsed: boolean;
     toggleSidebar: () => void;
+    className?: string;
 }
 
-export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
+export function Sidebar({ isCollapsed, toggleSidebar, className = "" }: SidebarProps) {
     const pathname = usePathname();
     const router = useRouter();
     const { profile, signOut } = useAuth();
@@ -74,7 +75,7 @@ export function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
     };
 
     return (
-        <div className={`flex flex-col h-screen bg-white dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800 flex-shrink-0 transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-[260px]'}`}>
+        <div className={`flex flex-col h-screen bg-white dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800 flex-shrink-0 transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-[260px]'} ${className}`}>
             {/* Logo/Brand Area */}
             <div className={`flex items-center h-16 border-b border-zinc-100/50 dark:border-zinc-800 ${isCollapsed ? 'justify-center px-0' : 'justify-between px-6'}`}>
                 {!isCollapsed && (
