@@ -115,7 +115,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Main Content Areas */}
-                <div className="p-4 md:p-8 max-w-4xl space-y-6">
+                <div className="p-4 md:p-8 w-full max-w-[1600px] mx-auto space-y-6">
 
                     {/* Onboarding Cards Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -191,11 +191,11 @@ export default function DashboardPage() {
                                 <p className="text-[13px] text-zinc-400">Loading latest legal news...</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-zinc-100">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 p-4 md:p-6 bg-zinc-50/30">
                                 {newsItems.map((news) => (
-                                    <div key={news.id} className="p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6 group">
+                                    <div key={news.id} className="p-4 flex flex-col sm:flex-row gap-4 md:gap-5 group bg-white border border-[#e5e7eb] shadow-[0_1px_2px_rgba(0,0,0,0.02)] rounded-xl hover:shadow-md transition-all">
                                         {/* News Thumbnail */}
-                                        <div className="w-full h-48 md:w-[200px] md:h-[220px] rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100">
+                                        <div className="w-full sm:w-[140px] 2xl:w-[180px] h-48 sm:h-auto rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={news.image}
