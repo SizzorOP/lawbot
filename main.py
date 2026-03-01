@@ -45,11 +45,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 
 
-# Allow specific frontend origins or all if specified
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-allow_origins = [frontend_url]
-if frontend_url == "*":
-    allow_origins = ["*"]
+# Allow all frontend origins to prevent CORS errors across Vercel/Netlify/Local testing
+allow_origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
