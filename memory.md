@@ -1,6 +1,6 @@
 # YuktiAI (Lawbot) — Project Memory
 
-> Last updated: 2026-02-27 (Session 3 — State Management & UI Redesign)  
+> Last updated: 2026-03-01 (Session 4 — Feature Expansion & Production Hardening)  
 > Repository: https://github.com/SizzorOP/lawbot
 
 ---
@@ -59,6 +59,11 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 | `routers/documents.py` | `/api/cases/{id}/documents` | File upload/download with UUID naming, size/type validation |
 | `routers/calendar.py` | `/api/calendar/events` | Calendar event CRUD, date-range queries, case linking |
 
+### Security Layers (implemented in `main.py`)
+- **CORS Mitigation**: Restricted to `localhost:3000` to prevent cross-origin script attacks.
+- **TrustedHostMiddleware**: Mitigates Host Header Injection by enforcing specific host allowlists.
+- **SecurityHeadersMiddleware**: Custom middleware adding `X-Frame-Options`, `X-Content-Type-Options`, and suppressing server signatures.
+
 ---
 
 ## 3. Key Files
@@ -66,7 +71,7 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 ### Backend
 | File | Purpose |
 |---|---|
-| `main.py` | FastAPI app, CORS middleware, route dispatcher, DB init |
+| `main.py` | FastAPI app, CORS/Security middleware, early `.env` loading, route dispatcher |
 | `database.py` | SQLAlchemy engine, session factory, declarative Base (SQLite) |
 | `models.py` | ORM models: `Case`, `Document`, `CalendarEvent` with relationships |
 | `schemas.py` | Pydantic request/response validation schemas |
@@ -80,12 +85,17 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 | `tools/adversarial_engine.py` | GPT-4o opposing counsel simulator |
 | `tools/procedural_navigator.py` | Hardcoded + LLM procedural timelines |
 | `tools/document_processor.py` | GPT-4o document analysis with timeline extraction |
+| `tools/drafting_agent.py` | LLM-based legal drafting assistant |
 
 ### Frontend (`ui/`)
 | File | Purpose |
 |---|---|
-| `src/app/page.tsx` | Dashboard: Welcome card, Case Management, Documents Storage |
-| `src/app/research/page.tsx` | Research chat: Glean-style search → chat transition |
+| `src/app/page.tsx` | Dashboard: News Spotlight (Analyse Legally), Case Management overview |
+| `src/app/research/page.tsx` | Research chat: tab-persistent history (localStorage), URL auto-prompt |
+| `src/app/library/page.tsx` | Legal Library: Acts/Judgments search with deep hierarchical filters |
+| `src/app/drafting/page.tsx` | Drafting Dashboard: File-management style view for legal drafts |
+| `src/app/drafting/new/page.tsx` | Drafting Wizard: 3-step creation flow with floating anchored input |
+| `src/app/meeting/page.tsx` | Meeting Assistant: A/V file upload with transcription & summary capability |
 | `src/app/cases/page.tsx` | Cases dashboard: search, filter by status, create case modal |
 | `src/app/cases/[id]/page.tsx` | Case detail: 3 tabs (Overview, Documents, Calendar) |
 | `src/app/calendar/page.tsx` | Calendar: date-grouped timeline, type filters, event creation |
@@ -94,7 +104,7 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 | `src/components/CaseCard.tsx` | Case summary card for dashboard grid |
 | `src/components/DocumentUpload.tsx` | Drag-and-drop file uploader with validation |
 | `src/lib/api.ts` | Typed API client for cases, documents, calendar endpoints |
-| `src/components/SearchBar.tsx` | Input bar with Enter-to-search |
+| `src/components/SearchBar.tsx` | Input bar with auto-firing logic |
 | `src/components/MessageList.tsx` | Chat thread with ScrollArea |
 | `src/components/ResultRenderer.tsx` | Route-aware renderer for all 6 result types |
 | `src/types/index.ts` | ChatMessage TypeScript interface |
@@ -110,41 +120,15 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 
 ## 4. Bugs Fixed (Debugging Log)
 
-### Bug 1: Router Schema Validation Error
-- **Symptom**: OpenAI returned `400 Invalid schema`
-- **Root Cause**: Nested `extracted_kwargs` object lacked a `"required"` array
-- **Fix**: Added `"required": ["query", "case_stage", "law_code"]` to the JSON schema in `router.py`
+### Bug 8: Missing OPENAI_API_KEY in Backend Lifecycle
+- **Symptom**: HTTP 500 on `/api/query` when clicking "Analyse Legally"
+- **Root Cause**: `Navigation Router` crashed because `os.getenv` was called before `load_dotenv` or before environment propagation in zombie processes.
+- **Fix**: Force-terminated stale uvicorn processes. Patched `main.py` to call `load_dotenv(override=True)` at the absolute top of the module to guarantee key visibility.
 
-### Bug 2: Indian Kanoon Returning 0 Results
-- **Symptom**: All Kanoon searches returned empty arrays
-- **Root Cause**: API expects `application/x-www-form-urlencoded` data, not `application/json`
-- **Fix**: Changed `requests.post(url, json=...)` → `requests.post(url, data=...)` in `legal_search.py`
-- **Also Fixed**: Remapped response keys: `tid` → `doc_id`, `headline` → `snippet`, added `docsource`
-
-### Bug 3: LLM Generating Verbose Search Queries
-- **Symptom**: Router sent full sentences like "Find Supreme Court judgments on..." to Kanoon
-- **Root Cause**: System prompt wasn't strict enough about keyword extraction
-- **Fix**: Rewrote router prompt to enforce boolean keyword-only extraction
-
-### Bug 4: Backend Crash on Missing SerpAPI Key
-- **Symptom**: HTTP 500 when web_search fallback triggered without SERPAPI_KEY
-- **Root Cause**: `web_search.py` raised an exception instead of gracefully handling missing key
-- **Fix**: Return a mock "Search Unavailable" result object instead of crashing
-
-### Bug 5: No Conversational Brain
-- **Symptom**: Questions like "Explain Section 482 CrPC" returned raw Kanoon results or got rejected as "unknown"
-- **Root Cause**: System had no tool for conversational Q&A — only API-based search tools
-- **Fix**: Created `tools/general_chat.py` and added `general_chat` route to router
-
-### Bug 6: Frontend Not Rendering New Routes
-- **Symptom**: All new routes showed "Here are your results:" with no content
-- **Root Cause**: `ResultRenderer.tsx` only had UI logic for `legal_search` arrays
-- **Fix**: Rewrote ResultRenderer with dedicated UI components for all 6 route types
-
-### Bug 7: Content Cut Off Below Scroll Reach
-- **Symptom**: Long chat responses were hidden behind the fixed search bar
-- **Root Cause**: Insufficient bottom padding in the ScrollArea and flex container
-- **Fix**: Added `pb-32`, `mb-32` to MessageList and `mb-24` to page container
+### Bug 9: Double-firing Research Queries
+- **Symptom**: User saw two duplicate questions and two error/responses for one click.
+- **Root Cause**: React StrictMode double-rendering the `useEffect` hook. `useState` flag was too slow to block the second call.
+- **Fix**: Switched to `useRef` for a synchronous "session-level" guard flag in `research/page.tsx`.
 
 ---
 
@@ -166,7 +150,13 @@ User Query → Navigation Router (GPT-4o) → Tool Execution → Structured Resp
 
 8. **Cascading Case Deletion**: Deleting a case automatically removes all associated documents (both DB records and files on disk) and calendar events.
 
-9. **Antigravity-Style UI**: Clean minimalist design with mixed typography (Playfair Display serif for headers + Geist sans for UI elements), pure white backgrounds, ultra-light borders, and blue-50 active states. Matching the reference design from nyayassist.
+9. **Antigravity-Style UI**: Clean minimalist design with mixed typography (Playfair Display serif for headers + Geist sans for UI elements), pure white backgrounds, ultra-light borders, and blue-50 active states.
+
+10. **Early Env Loading**: `main.py` performs an eager `load_dotenv` before any internal imports to ensure all tool configurations (OpenAI, Kanoon) are available globally during process spin-up.
+
+11. **Browser Persistence**: `/research` utilizes `localStorage` to preserve message history across page navigations, providing a seamless "tab-switchable" experience.
+
+12. **News Spotlight Logic**: Dashboard features a legal news feed where "Analyse Legally" pre-generates complex analysis prompts and directs the user to the Research module with automatic query execution.
 
 ---
 
@@ -227,6 +217,7 @@ npx next dev
 3. `f7df50c` — fix(ui): resolve scroll area clipping by adding bottom padding
 4. `6d60089` — fix(search): optimize LLM search keyword extraction boolean prompt
 5. `b88fe03` — fix(search): add extracted search terms to API response
+6. `cd86b82` — feat: Implement News Spotlight, Research Wiring, OpenAI Fix & UI Enhancements
 
 ---
 
@@ -234,13 +225,13 @@ npx next dev
 
 - ~~**No file upload**: Document processor only works with pasted text, not PDF uploads~~ ✅ **RESOLVED** — Document upload via drag-and-drop with file validation
 - ~~**No state management**: No database, no case tracking~~ ✅ **RESOLVED** — SQLite + SQLAlchemy, full CRUD for cases/docs/events
-- **No conversation memory**: Each query is independent; no multi-turn chat context
+- ~~**No conversation memory**: Each query is independent; no multi-turn chat context~~ ✅ **RESOLVED** — Tab-persistent memory implemented for Research module
 - **No authentication**: API is open, no user sessions
 - **Single LLM provider**: Locked to OpenAI GPT-4o; no fallback to other providers
 - **No caching**: Every query hits the LLM and APIs fresh
 - **WhatsApp integration**: Planned but not yet implemented
 - **Cloud storage**: Documents stored locally in `uploads/`; needs migration to S3/GCS for production
-- **Dynamic dashboard data**: Dashboard currently shows static "No cases found" — needs API integration to show real counts
+- ~~**Dynamic dashboard data**: Dashboard currently shows static "No cases found"~~ ✅ **RESOLVED** — News Spotlight features live legal developments with interactive analysis
 
 ---
 
@@ -263,9 +254,9 @@ npx next dev
 | Dashboard | `/` | ✅ Active |
 | Case Management | `/cases` | ✅ Active |
 | Research | `/research` | ✅ Active |
-| Drafting | `#` | 🔲 Placeholder |
-| Document Storage | `#` | 🔲 Placeholder |
-| Document Processor | `#` | 🔲 Placeholder |
-| Meeting Assistant | `#` | 🔲 Placeholder |
+| Drafting | `/drafting` | ✅ Active |
+| Document Storage | `/documents` | ✅ Active |
+| Document Processor | `/processor` | 🔲 Placeholder |
+| Meeting Assistant | `/meeting` | ✅ Active |
 | Calendar | `/calendar` | ✅ Active |
-| Legal Library | `#` | 🔲 Placeholder |
+| Legal Library | `/library` | ✅ Active |
