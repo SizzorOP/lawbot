@@ -220,18 +220,20 @@ function ResearchContent() {
   }, [searchParams, handleSearch, isLoaded]);
 
   return (
-    <div className="flex h-screen overflow-hidden font-sans text-zinc-900 selection:bg-blue-200">
-      {/* History Sidebar */}
-      <ChatHistorySidebar
-        sessions={sessions}
-        activeSessionId={activeId}
-        onNewChat={handleNewChat}
-        onSelectSession={handleSelectSession}
-        onRenameSession={handleRenameSession}
-        onDeleteSession={handleDeleteSession}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen((v) => !v)}
-      />
+    <div className="flex h-[calc(100vh-64px)] md:h-screen overflow-hidden font-sans text-zinc-900 selection:bg-blue-200">
+      {/* History Sidebar - Hidden on mobile for now */}
+      <div className="hidden md:flex h-full">
+        <ChatHistorySidebar
+          sessions={sessions}
+          activeSessionId={activeId}
+          onNewChat={handleNewChat}
+          onSelectSession={handleSelectSession}
+          onRenameSession={handleRenameSession}
+          onDeleteSession={handleDeleteSession}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen((v) => !v)}
+        />
+      </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
@@ -260,8 +262,8 @@ function ResearchContent() {
 
           <div
             className={`w-full transition-all duration-500 overflow-hidden ${hasStarted
-                ? "mb-24 flex-1 flex flex-col min-h-0"
-                : "max-w-3xl translate-y-0"
+              ? "mb-24 flex-1 flex flex-col min-h-0"
+              : "max-w-3xl translate-y-0"
               }`}
           >
             {hasStarted && <MessageList messages={messages} />}
@@ -270,12 +272,19 @@ function ResearchContent() {
           <div
             className={`w-full transition-all duration-500 
             ${hasStarted
-                ? "fixed bottom-0 right-0 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent pb-8 pt-12 px-4 z-40"
+                ? "fixed bottom-0 right-0 left-0 md:left-auto bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent pb-8 pt-12 px-4 z-40"
                 : ""
               }`}
             style={
               hasStarted
-                ? { left: sidebarOpen ? "calc(240px + 280px)" : "calc(240px + 48px)" }
+                ? {
+                  // On desktop, offset by Main Sidebar (260) + Chat Sidebar (280 or 48)
+                  // We handle mobile by overriding left to 0 in CSS (left-0, which takes precedence if we don't set left in JS, or we do logic here)
+                  ...(typeof window !== 'undefined' && window.innerWidth >= 768
+                    ? { left: sidebarOpen ? "calc(260px + 280px)" : "calc(260px + 48px)" }
+                    : { left: 0 }
+                  )
+                }
                 : undefined
             }
           >

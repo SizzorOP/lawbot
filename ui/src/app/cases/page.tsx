@@ -69,7 +69,7 @@ export default function CasesPage() {
     );
 
     return (
-        <div className="min-h-screen p-8">
+        <div className="flex flex-col h-[calc(100vh-64px)] md:h-screen bg-zinc-50 dark:bg-zinc-900 border-l border-zinc-100 dark:border-zinc-800 p-8">
             {/* Page Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
@@ -110,8 +110,8 @@ export default function CasesPage() {
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filter === f
-                                    ? "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 shadow-sm"
-                                    : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                                ? "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 shadow-sm"
+                                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                                 }`}
                         >
                             {f === "" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
