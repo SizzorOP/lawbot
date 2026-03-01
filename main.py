@@ -46,7 +46,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Prevent Host Header Injection
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.onrender.com", "yuktiai.onrender.com"]
+    allowed_hosts=["*"]
 )
 
 # Allow specific frontend origins or all if specified
