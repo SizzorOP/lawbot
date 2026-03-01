@@ -43,11 +43,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Prevent Host Header Injection
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=["*"]
-)
+
 
 # Allow specific frontend origins or all if specified
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
