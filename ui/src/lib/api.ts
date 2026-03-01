@@ -3,7 +3,7 @@
  * All fetch calls to the FastAPI backend go through here.
  */
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ─── Generic Helpers ─────────────────────────────────────────
 

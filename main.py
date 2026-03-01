@@ -49,10 +49,15 @@ app.add_middleware(
     allowed_hosts=["localhost", "127.0.0.1", "127.0.0.1:8000", "localhost:8000"]
 )
 
-# Added strictly restricted CORS middleware to prevent cross-origin leaks
+# Allow specific frontend origins or all if specified
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+allow_origins = [frontend_url]
+if frontend_url == "*":
+    allow_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Strictly lock down to Next.js frontend
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
