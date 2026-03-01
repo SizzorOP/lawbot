@@ -97,13 +97,13 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-white">
+        <div className="flex flex-col xl:flex-row h-[calc(100vh-64px)] md:h-screen bg-white">
             {/* Center Scrollable Area */}
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200">
                 {/* Header Area */}
-                <div className="flex items-center justify-between px-8 py-10 border-b border-zinc-100/50">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-6 md:px-8 md:py-10 border-b border-zinc-100/50 gap-4 sm:gap-0">
                     <div>
-                        <h1 className="text-[28px] font-semibold text-zinc-900 font-serif tracking-tight mb-2">
+                        <h1 className="text-2xl md:text-[28px] font-semibold text-zinc-900 font-serif tracking-tight mb-2">
                             Welcome {displayName}
                         </h1>
                         <p className="text-[13px] text-zinc-500 font-medium">Last worked on</p>
@@ -115,10 +115,10 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Main Content Areas */}
-                <div className="p-8 max-w-4xl space-y-6">
+                <div className="p-4 md:p-8 max-w-4xl space-y-6">
 
                     {/* Onboarding Cards Grid */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-white border border-[#e5e7eb] rounded-xl p-6 shadow-[0_1px_2px_rgba(0,0,0,0.02)] relative">
                             <div className="flex justify-between items-start mb-4">
                                 <h3 className="font-serif font-bold text-[16px] text-zinc-900">How to use YuktiAI</h3>
@@ -147,7 +147,7 @@ export default function DashboardPage() {
                             <h2 className="text-[16px] font-bold text-zinc-900 font-serif tracking-tight">Case Management</h2>
                             <Briefcase className="w-4 h-4 text-zinc-400" />
                         </div>
-                        <div className="p-16 flex flex-col items-center justify-center">
+                        <div className="p-10 md:p-16 flex flex-col items-center justify-center">
                             <p className="text-[13px] text-zinc-400 mb-6">No cases found</p>
                             <Link
                                 href="/cases"
@@ -160,9 +160,9 @@ export default function DashboardPage() {
 
                     {/* ─── News in Spotlight (Live) ──────────────────────────────── */}
                     <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-[16px] font-bold text-zinc-900 font-serif tracking-tight">News in Spotlight</h2>
+                        <div className="flex items-center justify-between px-4 py-4 md:px-6 border-b border-[#e5e7eb]">
+                            <div className="flex items-center gap-2 md:gap-3">
+                                <h2 className="text-[15px] md:text-[16px] font-bold text-zinc-900 font-serif tracking-tight">News in Spotlight</h2>
                                 {newsSource === "live" && (
                                     <span className="px-2 py-0.5 text-[10px] font-semibold bg-green-100 text-green-700 rounded-full uppercase tracking-wide">Live</span>
                                 )}
@@ -193,9 +193,9 @@ export default function DashboardPage() {
                         ) : (
                             <div className="divide-y divide-zinc-100">
                                 {newsItems.map((news) => (
-                                    <div key={news.id} className="p-6 flex gap-6 group">
+                                    <div key={news.id} className="p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6 group">
                                         {/* News Thumbnail */}
-                                        <div className="w-[200px] h-[220px] rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100">
+                                        <div className="w-full h-48 md:w-[200px] md:h-[220px] rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={news.image}
@@ -250,7 +250,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Right Sidebar for Quick Prompts */}
-            <div className="w-[300px] xl:w-[320px] bg-white border-l border-zinc-100 flex-shrink-0 h-screen overflow-y-auto px-6 py-8 scrollbar-thin scrollbar-thumb-zinc-200">
+            <div className="w-full xl:w-[320px] bg-white border-t xl:border-l xl:border-t-0 border-zinc-100 flex-shrink-0 h-auto xl:h-screen overflow-y-auto px-4 py-8 md:px-6 scrollbar-thin scrollbar-thumb-zinc-200">
                 <h3 className="font-serif text-[18px] font-semibold text-zinc-900 tracking-tight mb-6 mt-2">Quick Prompts</h3>
                 <div className="space-y-4">
                     {quickPrompts.map((prompt, idx) => (
