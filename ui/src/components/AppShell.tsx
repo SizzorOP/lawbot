@@ -48,7 +48,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Main content area — offset by sidebar width on desktop */}
-            <main className={`flex-1 min-h-screen transition-all duration-300 w-full md:${isCollapsed ? 'pl-[72px]' : 'pl-[260px]'} pt-16 md:pt-0`}>
+            <main className={`flex-1 min-h-screen transition-all duration-300 w-full ${isCollapsed ? 'md:pl-[72px]' : 'md:pl-[260px]'} pt-16 md:pt-0`}>
                 <MobileHeader />
                 {children}
             </main>

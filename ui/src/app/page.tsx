@@ -97,7 +97,7 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="flex flex-col xl:flex-row h-[calc(100vh-64px)] md:h-screen bg-white">
+        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] md:h-screen bg-white">
             {/* Center Scrollable Area */}
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200">
                 {/* Header Area */}
@@ -250,7 +250,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Right Sidebar for Quick Prompts */}
-            <div className="w-full xl:w-[320px] bg-white border-t xl:border-l xl:border-t-0 border-zinc-100 flex-shrink-0 h-auto xl:h-screen overflow-y-auto px-4 py-8 md:px-6 scrollbar-thin scrollbar-thumb-zinc-200">
+            <div className="w-full md:w-[300px] xl:w-[320px] bg-white border-t md:border-l md:border-t-0 border-zinc-100 flex-shrink-0 h-auto md:h-screen overflow-y-auto px-4 py-8 md:px-6 scrollbar-thin scrollbar-thumb-zinc-200">
                 <h3 className="font-serif text-[18px] font-semibold text-zinc-900 tracking-tight mb-6 mt-2">Quick Prompts</h3>
                 <div className="space-y-4">
                     {quickPrompts.map((prompt, idx) => (
