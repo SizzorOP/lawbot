@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect, useCallback } from "react";
 import {
     Download,
     Briefcase,
@@ -13,43 +14,21 @@ import {
     BookOpen,
     ExternalLink,
     Languages,
+    RefreshCw,
+    Clock,
+    Loader2,
 } from "lucide-react";
 
-// ─── News Data ──────────────────────────────────────────────────────────
-const newsItems = [
-    {
-        id: "news-1",
-        title: "Madras High Court directs MS Dhoni to deposit ₹10 lakh in defamation case",
-        summary: "In a defamation suit filed by MS Dhoni over IPL fixing allegations, the Madras High Court directed him to deposit ₹10 lakh. The amount is not a penalty, but intended to cover transcription and translation of audio-video evidence required for trial.",
-        date: "February 20, 2026",
-        image: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400&h=500&fit=crop",
-        analysePrompt: "In a defamation suit filed by MS Dhoni over IPL fixing allegations, the Madras High Court directed him to deposit ₹10 lakh. The amount is not a penalty, but intended to cover transcription and translation of audio-video evidence required for trial.\nWho should bear the cost of processing evidence in such cases — the plaintiff, defendant, or the court?",
-    },
-    {
-        id: "news-2",
-        title: "Supreme Court clarifies guidelines on bail for economic offences",
-        summary: "The Supreme Court of India laid down fresh guidelines distinguishing between economic offences and regular criminal cases for the purpose of bail, emphasizing that blanket denial of bail in economic offences violates fundamental rights under Article 21.",
-        date: "February 18, 2026",
-        image: "https://images.unsplash.com/photo-1589578527966-fdac0f44566c?w=400&h=500&fit=crop",
-        analysePrompt: "The Supreme Court of India laid down fresh guidelines distinguishing between economic offences and regular criminal cases for the purpose of bail.\nAnalyse the legal precedents on bail in economic offences. How does Article 21 interact with denial of bail? What tests should courts apply when deciding bail in economic offence matters?",
-    },
-    {
-        id: "news-3",
-        title: "Delhi HC issues landmark ruling on tenants' rights during redevelopment",
-        summary: "The Delhi High Court ruled that tenants cannot be evicted during building redevelopment without providing adequate alternative accommodation or compensation, strengthening tenant protections under the Delhi Rent Control Act.",
-        date: "February 15, 2026",
-        image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400&h=500&fit=crop",
-        analysePrompt: "The Delhi High Court ruled that tenants cannot be evicted during building redevelopment without providing adequate alternative accommodation or compensation.\nWhat are the current tenant protection mechanisms under the Delhi Rent Control Act? How does this ruling impact landlord-tenant disputes during redevelopment projects?",
-    },
-    {
-        id: "news-4",
-        title: "NCLAT upholds CCI penalty on tech giant for anti-competitive practices",
-        summary: "The National Company Law Appellate Tribunal upheld a ₹1,337 crore penalty imposed by the Competition Commission of India on a major tech company for abusing its dominant position in the smartphone ecosystem market.",
-        date: "February 12, 2026",
-        image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=400&h=500&fit=crop",
-        analysePrompt: "NCLAT upheld a ₹1,337 crore penalty imposed by CCI on a major tech company for abusing its dominant position in the smartphone ecosystem market.\nWhat constitutes 'abuse of dominant position' under the Competition Act, 2002? What are the legal remedies available to companies facing such penalties?",
-    },
-];
+// ─── Types ──────────────────────────────────────────────────────────
+interface NewsItem {
+    id: string;
+    title: string;
+    summary: string;
+    date: string;
+    link: string;
+    image: string;
+    analysePrompt: string;
+}
 
 // ─── Quick Prompts Data ─────────────────────────────────────────────────
 const quickPrompts = [
@@ -67,23 +46,67 @@ export default function DashboardPage() {
     const { profile } = useAuth();
     const displayName = profile?.full_name || "User";
 
+    const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+    const [newsLoading, setNewsLoading] = useState(true);
+    const [newsSource, setNewsSource] = useState("");
+    const [lastUpdated, setLastUpdated] = useState("");
+    const [nextUpdate, setNextUpdate] = useState("");
+
+    const fetchNews = useCallback(async () => {
+        setNewsLoading(true);
+        try {
+            const res = await fetch("/api/news");
+            if (!res.ok) throw new Error("Failed to fetch news");
+            const data = await res.json();
+            setNewsItems(data.news || []);
+            setNewsSource(data.source || "unknown");
+            setLastUpdated(data.lastUpdated || "");
+            setNextUpdate(data.nextUpdate || "");
+        } catch {
+            // If API fails, keep existing news if any
+            console.error("Failed to load news");
+        } finally {
+            setNewsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchNews();
+
+        // Auto‑refresh every 4 hours
+        const interval = setInterval(fetchNews, 4 * 60 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [fetchNews]);
+
     const handleAnalyseLegally = (prompt: string) => {
-        // Navigate to Research page with the pre-generated prompt in the URL
         const encodedPrompt = encodeURIComponent(prompt);
         router.push(`/research?prompt=${encodedPrompt}`);
     };
 
+    const formatTimeAgo = (iso: string) => {
+        if (!iso) return "";
+        try {
+            const diff = Date.now() - new Date(iso).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return "just now";
+            if (mins < 60) return `${mins}m ago`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            return `${Math.floor(hrs / 24)}d ago`;
+        } catch { return ""; }
+    };
+
     return (
-        <div className="flex h-screen overflow-hidden bg-white dark:bg-zinc-900">
+        <div className="flex h-screen overflow-hidden bg-white">
             {/* Center Scrollable Area */}
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200">
                 {/* Header Area */}
                 <div className="flex items-center justify-between px-8 py-10 border-b border-zinc-100/50">
                     <div>
-                        <h1 className="text-[28px] font-semibold text-zinc-900 dark:text-white font-serif tracking-tight mb-2">
+                        <h1 className="text-[28px] font-semibold text-zinc-900 font-serif tracking-tight mb-2">
                             Welcome {displayName}
                         </h1>
-                        <p className="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">Last worked on</p>
+                        <p className="text-[13px] text-zinc-500 font-medium">Last worked on</p>
                     </div>
                     <button className="flex items-center gap-2 bg-[#2d2d2d] hover:bg-black text-white px-4 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm">
                         <Download className="w-4 h-4" />
@@ -135,51 +158,92 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* ─── News in Spotlight ──────────────────────────────────── */}
+                    {/* ─── News in Spotlight (Live) ──────────────────────────────── */}
                     <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-                            <h2 className="text-[16px] font-bold text-zinc-900 font-serif tracking-tight">News in Spotlight</h2>
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-[16px] font-bold text-zinc-900 font-serif tracking-tight">News in Spotlight</h2>
+                                {newsSource === "live" && (
+                                    <span className="px-2 py-0.5 text-[10px] font-semibold bg-green-100 text-green-700 rounded-full uppercase tracking-wide">Live</span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {lastUpdated && (
+                                    <span className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                                        <Clock className="w-3 h-3" />
+                                        Updated {formatTimeAgo(lastUpdated)}
+                                    </span>
+                                )}
+                                <button
+                                    onClick={fetchNews}
+                                    disabled={newsLoading}
+                                    className="p-1.5 rounded-md hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
+                                    title="Refresh news"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${newsLoading ? 'animate-spin' : ''}`} />
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="divide-y divide-zinc-100">
-                            {newsItems.map((news) => (
-                                <div key={news.id} className="p-6 flex gap-6 group">
-                                    {/* News Thumbnail */}
-                                    <div className="w-[200px] h-[220px] rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={news.image}
-                                            alt={news.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
+                        {newsLoading && newsItems.length === 0 ? (
+                            <div className="p-16 flex flex-col items-center justify-center">
+                                <Loader2 className="w-6 h-6 text-zinc-300 animate-spin mb-3" />
+                                <p className="text-[13px] text-zinc-400">Loading latest legal news...</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-zinc-100">
+                                {newsItems.map((news) => (
+                                    <div key={news.id} className="p-6 flex gap-6 group">
+                                        {/* News Thumbnail */}
+                                        <div className="w-[200px] h-[220px] rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={news.image}
+                                                alt={news.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
 
-                                    {/* News Content */}
-                                    <div className="flex-1 flex flex-col justify-between min-w-0">
-                                        <div>
-                                            <h3 className="text-[15px] font-bold text-zinc-900 mb-3 leading-snug">
-                                                {news.title}
-                                            </h3>
-                                            <p className="text-[13px] text-zinc-500 leading-relaxed mb-3">
-                                                {news.summary}
-                                            </p>
-                                            <button className="text-[13px] font-semibold text-blue-700 hover:text-blue-800 transition-colors">
-                                                Read more
-                                            </button>
-                                        </div>
-                                        <div className="flex items-center justify-between pt-3">
-                                            <span className="text-[12px] text-zinc-400">{news.date}</span>
-                                            <button
-                                                onClick={() => handleAnalyseLegally(news.analysePrompt)}
-                                                className="px-5 py-2 bg-[#2d2d2d] hover:bg-black text-white text-[12px] font-semibold rounded-lg transition-colors shadow-sm"
-                                            >
-                                                Analyse Legally
-                                            </button>
+                                        {/* News Content */}
+                                        <div className="flex-1 flex flex-col justify-between min-w-0">
+                                            <div>
+                                                <h3 className="text-[15px] font-bold text-zinc-900 mb-3 leading-snug">
+                                                    {news.title}
+                                                </h3>
+                                                <p className="text-[13px] text-zinc-500 leading-relaxed mb-3">
+                                                    {news.summary}
+                                                </p>
+                                                {news.link && news.link !== "#" && (
+                                                    <a
+                                                        href={news.link}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-[13px] font-semibold text-blue-700 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
+                                                    >
+                                                        Read more
+                                                        <ExternalLink className="w-3 h-3" />
+                                                    </a>
+                                                )}
+                                                {(!news.link || news.link === "#") && (
+                                                    <button className="text-[13px] font-semibold text-blue-700 hover:text-blue-800 transition-colors">
+                                                        Read more
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center justify-between pt-3">
+                                                <span className="text-[12px] text-zinc-400">{news.date}</span>
+                                                <button
+                                                    onClick={() => handleAnalyseLegally(news.analysePrompt)}
+                                                    className="px-5 py-2 bg-[#2d2d2d] hover:bg-black text-white text-[12px] font-semibold rounded-lg transition-colors shadow-sm"
+                                                >
+                                                    Analyse Legally
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                 </div>
