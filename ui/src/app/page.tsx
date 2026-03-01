@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
     Download,
     Briefcase,
@@ -63,6 +64,8 @@ const quickPrompts = [
 
 export default function DashboardPage() {
     const router = useRouter();
+    const { profile } = useAuth();
+    const displayName = profile?.full_name || "User";
 
     const handleAnalyseLegally = (prompt: string) => {
         // Navigate to Research page with the pre-generated prompt in the URL
@@ -71,16 +74,16 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-white">
+        <div className="flex h-screen overflow-hidden bg-white dark:bg-zinc-900">
             {/* Center Scrollable Area */}
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200">
                 {/* Header Area */}
                 <div className="flex items-center justify-between px-8 py-10 border-b border-zinc-100/50">
                     <div>
-                        <h1 className="text-[28px] font-semibold text-zinc-900 font-serif tracking-tight mb-2">
-                            Welcome chotu lal
+                        <h1 className="text-[28px] font-semibold text-zinc-900 dark:text-white font-serif tracking-tight mb-2">
+                            Welcome {displayName}
                         </h1>
-                        <p className="text-[13px] text-zinc-500 font-medium">Last worked on</p>
+                        <p className="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">Last worked on</p>
                     </div>
                     <button className="flex items-center gap-2 bg-[#2d2d2d] hover:bg-black text-white px-4 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm">
                         <Download className="w-4 h-4" />
