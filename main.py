@@ -68,8 +68,11 @@ app.include_router(calendar_router)
 @app.on_event("startup")
 def on_startup():
     """Create all database tables on server startup."""
-    Base.metadata.create_all(bind=engine)
-    print("Database tables created successfully.")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully.")
+    except Exception as e:
+        print(f"Failed to create database tables (this is normal if using an external DB without the correct IP configuration): {e}")
 
 
 class QueryRequest(BaseModel):
