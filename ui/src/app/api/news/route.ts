@@ -49,7 +49,17 @@ function extractAllItems(xml: string): string[] {
 }
 
 function stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+    // Decode entities first so encoded tags become real tags
+    const decoded = html
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, " ");
+
+    // Now strip the tags
+    return decoded.replace(/<[^>]*>/g, "").trim();
 }
 
 function formatDate(dateStr: string): string {
