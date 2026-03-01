@@ -44,6 +44,7 @@
 - **Cite-Or-Abstain:** Output only citations that explicitly exist in the provided context (Local PDFs), verified API index (Indian Kanoon), or verified Web Search. If none exist, output "Insufficient authority."
 - **Ethical Boundary:** Do not assist with evasion, evidence tampering, or illegal behavior.
 - **Tone:** Professional, direct, auxiliary (partner/assistant).
+- **Setup & Skills:** ALWAYS look for relevant skills and go through the GEMINI.md file before performing any task to perform it to the fullest.
 
 ## 3. Architectural Invariants
 - 3-Layer Structure (Architecture SOPs -> Navigation/Routing -> Python Tools).
@@ -52,3 +53,6 @@
 
 ## 4. Maintenance / Learning Log
 - *(To be updated as the system repairs/anneals itself)*
+
+## 5. UI/UX Rules
+- **Responsive Design:** Whenever you create a page, make sure it is responsive each and every section, button, and all options should be fully working. Avoid non-functional placeholders.

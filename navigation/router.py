@@ -42,6 +42,7 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
                             "procedural_navigator",
                             "document_processor",
                             "general_chat",
+                            "drafting_agent",
                             "unknown"
                         ],
                         "description": "The specific tool this query should be routed to."
@@ -52,9 +53,10 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
                         "properties": {
                             "query": {"type": "string"},
                             "case_stage": {"type": "string"},
-                            "law_code": {"type": "string"}
+                            "law_code": {"type": "string"},
+                            "draft_type": {"type": "string"}
                         },
-                        "required": ["query", "case_stage", "law_code"],
+                        "required": ["query", "case_stage", "law_code", "draft_type"],
                         "additionalProperties": False
                     },
                     "reasoning": {
@@ -109,7 +111,12 @@ def map_intent_to_tool(user_query: str) -> Dict[str, Any]:
        summarization, translation, timeline extraction, or bullet-point extraction.
        Set 'query' to the document text.
 
-    7. 'unknown': ONLY if the query is completely unrelated to law (e.g., weather, sports).
+    7. 'drafting_agent': When the user asks to write, draft, generate, or create a legal 
+       document, agreement, notice, petition, or complaint. 
+       Extract 'draft_type' if clearly specified (e.g., 'civil complaint', 'NDA', 'legal notice').
+       Set 'query' to the full user instructions.
+
+    8. 'unknown': ONLY if the query is completely unrelated to law (e.g., weather, sports).
     
     IMPORTANT: When in doubt between legal_search and general_chat, prefer general_chat.
     legal_search is ONLY for finding specific cases in the Kanoon database.

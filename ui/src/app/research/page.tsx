@@ -1,21 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { SearchBar } from "@/components/SearchBar";
 import { MessageList } from "@/components/MessageList";
 import { ChatMessage } from "@/types";
 import { Scale } from "lucide-react";
 
-export default function Home() {
+function ResearchContent() {
+  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const initialPromptFired = useRef(false); // useRef to survive StrictMode double-render
+
+  // Load chat history on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("lawbot_research_history");
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved));
+      } catch {
+        console.error("Failed to parse history");
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save chat history on update
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("lawbot_research_history", JSON.stringify(messages));
+    }
+  }, [messages, isLoaded]);
 
   const hasStarted = messages.length > 0;
 
-  const handleSearch = async (query: string) => {
+  // Wrap handleSearch in useCallback so useEffect can reference it safely
+  const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
 
-    // Add user message
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
@@ -42,12 +66,12 @@ export default function Home() {
         content: data.message || "Here are your results:",
         metadata: {
           type: data.route,
-          results: data.result?.results || data.result // Adapt based on exact backend shape
+          results: data.result?.results || data.result
         }
       };
 
       setMessages(prev => [...prev, aiMsg]);
-    } catch (err) {
+    } catch {
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -57,7 +81,16 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Auto-fire prompt from URL query parameter (from "Analyse Legally" button)
+  useEffect(() => {
+    const promptFromUrl = searchParams.get("prompt");
+    if (promptFromUrl && !initialPromptFired.current) {
+      initialPromptFired.current = true; // Synchronous flag — survives StrictMode double-render
+      handleSearch(promptFromUrl);
+    }
+  }, [searchParams, handleSearch]);
 
   return (
     <div className="min-h-screen font-sans text-zinc-900 dark:text-zinc-100 selection:bg-blue-200 dark:selection:bg-blue-900">
@@ -90,17 +123,17 @@ export default function Home() {
           <div className={hasStarted ? "max-w-4xl mx-auto w-full" : "w-full"}>
             <SearchBar onSearch={handleSearch} isLoading={isLoading} />
           </div>
-
-          {!hasStarted && (
-            <div className="mt-8 flex items-center justify-center gap-3 text-sm text-zinc-500 animate-in fade-in duration-1000 delay-300">
-              <span className="flex items-center gap-1.5"><kbd className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 font-mono text-xs">Enter</kbd> to search</span>
-              <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
-              <span>Powered by <span className="text-zinc-700 dark:text-zinc-300 font-medium">GPT-4o</span></span>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 }
 
+// Wrap in Suspense because useSearchParams requires it in Next.js App Router
+export default function ResearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-zinc-400">Loading...</p></div>}>
+      <ResearchContent />
+    </Suspense>
+  );
+}

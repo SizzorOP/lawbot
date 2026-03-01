@@ -1,5 +1,5 @@
 import { Card } from "./ui/card";
-import { AlertTriangle, CheckCircle, Clock, BookOpen } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, BookOpen, PenTool } from "lucide-react";
 
 export function ResultRenderer({ content, metadata }: { content: string, metadata: any }) {
 
@@ -177,6 +177,32 @@ export function ResultRenderer({ content, metadata }: { content: string, metadat
                                     <p className="text-xs text-zinc-500 italic">"{event.exact_quote}"</p>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    if (type === "drafting_agent" && results) {
+        return (
+            <div className="flex flex-col gap-4">
+                <div className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200 text-sm md:text-base leading-relaxed">
+                    {results.response_message}
+                </div>
+
+                {results.is_draft_type_clear && results.generated_template && (
+                    <div className="mt-4 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                        <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-900/50 px-4 py-3 rounded-t-xl border border-zinc-200 dark:border-zinc-800 border-b-0">
+                            <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                                <PenTool className="w-3.5 h-3.5" />
+                                {results.detected_draft_type || "Generated Template"}
+                            </span>
+                        </div>
+                        <div className="bg-white dark:bg-zinc-950 p-8 rounded-b-xl border border-zinc-200 dark:border-zinc-800">
+                            <pre className="whitespace-pre-wrap font-serif text-[15px] text-zinc-900 dark:text-zinc-100 leading-relaxed max-w-none">
+                                {results.generated_template}
+                            </pre>
                         </div>
                     </div>
                 )}

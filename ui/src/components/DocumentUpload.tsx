@@ -5,11 +5,12 @@ import { documentsApi } from "@/lib/api";
 import { Upload, FileText, X, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface DocumentUploadProps {
-    caseId: string;
+    caseId?: string | null;
+    allowedExtensions?: string;
     onUploadComplete: () => void;
 }
 
-export function DocumentUpload({ caseId, onUploadComplete }: DocumentUploadProps) {
+export function DocumentUpload({ caseId, allowedExtensions = ".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.webp", onUploadComplete }: DocumentUploadProps) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [uploadStatus, setUploadStatus] = useState<{
@@ -51,7 +52,7 @@ export function DocumentUpload({ caseId, onUploadComplete }: DocumentUploadProps
         setUploading(true);
         setUploadStatus(null);
         try {
-            await documentsApi.upload(caseId, file);
+            await documentsApi.upload(file, caseId);
             setUploadStatus({ type: "success", message: `"${file.name}" uploaded successfully.` });
             onUploadComplete();
         } catch (err: any) {
@@ -72,15 +73,15 @@ export function DocumentUpload({ caseId, onUploadComplete }: DocumentUploadProps
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`relative flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${isDragOver
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                        : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                    : "border-zinc-300 dark:border-zinc-700 hover:border-blue-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
                     }`}
             >
                 <input
                     type="file"
                     className="hidden"
                     onChange={handleFileSelect}
-                    accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.webp"
+                    accept={allowedExtensions}
                 />
                 {uploading ? (
                     <div className="flex flex-col items-center gap-2">
@@ -110,8 +111,8 @@ export function DocumentUpload({ caseId, onUploadComplete }: DocumentUploadProps
             {uploadStatus && (
                 <div
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all animate-in fade-in slide-in-from-top-2 duration-300 ${uploadStatus.type === "success"
-                            ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                            : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
+                        : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"
                         }`}
                 >
                     {uploadStatus.type === "success" ? (

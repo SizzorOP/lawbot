@@ -47,13 +47,15 @@ class Document(Base):
     __tablename__ = "documents"
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=False)
+    case_id = Column(String, ForeignKey("cases.id", ondelete="CASCADE"), nullable=True)
     filename = Column(String(255), nullable=False)        # UUID-based stored name
     original_filename = Column(String(255), nullable=False)  # User's original filename
     file_path = Column(String(500), nullable=False)
     file_type = Column(String(50), nullable=True)         # pdf, docx, png, etc.
     file_size = Column(Integer, nullable=True)             # bytes
     uploaded_at = Column(DateTime, default=utcnow)
+    transcript = Column(Text, nullable=True)               # Generated transcript
+    summary = Column(Text, nullable=True)                  # Generated summary
 
     # Relationships
     case = relationship("Case", back_populates="documents")
@@ -70,6 +72,8 @@ class CalendarEvent(Base):
     title = Column(String(255), nullable=False)
     event_type = Column(String(20), default="hearing")  # hearing | deadline | reminder
     event_date = Column(DateTime, nullable=False)
+    category = Column(String(20), default="court")      # court | non-court
+    meeting_link = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)
     location = Column(String(255), nullable=True)
     is_reminder_sent = Column(Boolean, default=False)

@@ -45,6 +45,8 @@ export interface DocumentItem {
     file_type: string | null;
     file_size: number | null;
     uploaded_at: string;
+    transcript?: string | null;
+    summary?: string | null;
 }
 
 export interface CalendarEventItem {
@@ -54,6 +56,8 @@ export interface CalendarEventItem {
     title: string;
     event_type: string;
     event_date: string;
+    category: string;
+    meeting_link: string | null;
     description: string | null;
     location: string | null;
     is_reminder_sent: boolean;
@@ -96,13 +100,18 @@ export const casesApi = {
 // ─── Documents ───────────────────────────────────────────────
 
 export const documentsApi = {
+    listAll: () => request<DocumentItem[]>("/api/documents"),
+
     list: (caseId: string) =>
         request<DocumentItem[]>(`/api/cases/${caseId}/documents`),
 
-    upload: async (caseId: string, file: File): Promise<DocumentItem> => {
+    upload: async (file: File, caseId?: string | null): Promise<DocumentItem> => {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await fetch(`${API_BASE}/api/cases/${caseId}/documents`, {
+        if (caseId) {
+            formData.append("case_id", caseId);
+        }
+        const res = await fetch(`${API_BASE}/api/documents`, {
             method: "POST",
             body: formData,
         });
@@ -113,11 +122,20 @@ export const documentsApi = {
         return res.json();
     },
 
+    update: (id: string, data: { case_id?: string | null }) =>
+        request<DocumentItem>(`/api/documents/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        }),
+
     downloadUrl: (documentId: string) =>
         `${API_BASE}/api/documents/${documentId}/download`,
 
     delete: (documentId: string) =>
         request<void>(`/api/documents/${documentId}`, { method: "DELETE" }),
+
+    analyzeMeeting: (documentId: string) =>
+        request<DocumentItem>(`/api/documents/${documentId}/analyze`, { method: "PATCH" }),
 };
 
 // ─── Calendar Events ─────────────────────────────────────────
@@ -136,6 +154,8 @@ export const calendarApi = {
         title: string;
         event_type?: string;
         event_date: string;
+        category?: string;
+        meeting_link?: string;
         case_id?: string;
         description?: string;
         location?: string;

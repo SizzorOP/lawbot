@@ -1,5 +1,13 @@
-from fastapi import FastAPI, HTTPException
+import os
+from dotenv import load_dotenv
+
+# Load all environment variables at the very beginning of the application lifecycle
+load_dotenv(override=True)
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 import uvicorn
 
@@ -11,6 +19,7 @@ from tools.adversarial_engine import analyze_draft
 from tools.procedural_navigator import get_procedural_timeline
 from tools.document_processor import process_legal_document
 from tools.general_chat import general_chat
+from tools.drafting_agent import generate_draft
 
 # Import new routers and database
 from database import engine
@@ -21,12 +30,31 @@ from routers.calendar import router as calendar_router
 
 app = FastAPI(title="YuktiAI API", description="Backend for the Lawbot Assistant")
 
-# Added CORS middleware to fix frontend request errors
+# Added Custom Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        if "server" in response.headers:
+            del response.headers["server"]
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Prevent Host Header Injection
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1", "127.0.0.1:8000", "localhost:8000"]
+)
+
+# Added strictly restricted CORS middleware to prevent cross-origin leaks
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"], # Strictly lock down to Next.js frontend
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -107,6 +135,11 @@ def process_query(request: QueryRequest):
             doc_type = request.document_type or "legal_document"
             result = process_legal_document(document_text, doc_type)
             return {"route": "document_processor", "result": result}
+            
+        elif target_tool == "drafting_agent":
+            draft_prompt = kwargs.get("query", raw_query)
+            result = generate_draft(draft_prompt)
+            return {"route": "drafting_agent", "result": result}
             
         elif target_tool == "unknown":
             return {"route": "unknown", "message": "I am YuktiAI, an AI Legal Assistant. This query seems outside my scope. I can help with Indian legal research, case law search, procedural timelines, document analysis, and legal explanations."}

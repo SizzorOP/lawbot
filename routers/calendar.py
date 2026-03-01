@@ -92,6 +92,8 @@ def _to_event_response(event: CalendarEvent) -> CalendarEventResponse:
         title=event.title,
         event_type=event.event_type,
         event_date=event.event_date,
+        category=event.category,
+        meeting_link=event.meeting_link,
         description=event.description,
         location=event.location,
         is_reminder_sent=event.is_reminder_sent,

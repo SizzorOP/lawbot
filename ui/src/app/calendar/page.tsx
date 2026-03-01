@@ -3,46 +3,46 @@
 import { useState, useEffect } from "react";
 import { calendarApi, casesApi, CalendarEventItem, CaseItem } from "@/lib/api";
 import {
-    CalendarDays,
+    Calendar as CalendarIcon,
+    Search,
     Plus,
     X,
     Loader2,
-    Clock,
-    MapPin,
-    Briefcase,
-    Trash2,
-    Filter,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
-import Link from "next/link";
 
 export default function CalendarPage() {
+    // Data State
     const [events, setEvents] = useState<CalendarEventItem[]>([]);
     const [cases, setCases] = useState<CaseItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
-    const [typeFilter, setTypeFilter] = useState<string>("");
-
-    const [formData, setFormData] = useState({
-        title: "",
-        event_type: "hearing",
-        event_date: "",
-        case_id: "",
-        description: "",
-        location: "",
-    });
     const [creating, setCreating] = useState(false);
 
+    // UI State
+    const [showForm, setShowForm] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [caseSearchQuery, setCaseSearchQuery] = useState("");
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [currentView, setCurrentView] = useState("Month"); // Day, Week, Month, Year
+
+    // Form State
+    const [formData, setFormData] = useState({
+        title: "",
+        category: "court", // court | non-court
+        case_id: "",
+        event_date: "",
+        start_time: "12:00",
+        end_time: "12:30",
+        meeting_link: "",
+        description: "",
+    });
+
     const loadEvents = async () => {
-        setLoading(true);
         try {
-            const params: any = {};
-            if (typeFilter) params.event_type = typeFilter;
-            const data = await calendarApi.list(params);
+            const data = await calendarApi.list();
             setEvents(data);
         } catch (err) {
             console.error("Failed to load events:", err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -58,276 +58,378 @@ export default function CalendarPage() {
     useEffect(() => {
         loadEvents();
         loadCases();
-    }, [typeFilter]);
+    }, []);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.title || !formData.event_date) return;
         setCreating(true);
         try {
-            const payload: any = {
+
+            // Generate full ISO datetime by combining date and start time
+            const combinedDateTimeString = `${formData.event_date}T${formData.start_time}:00`;
+
+            const payload = {
                 title: formData.title,
-                event_type: formData.event_type,
-                event_date: formData.event_date,
+                event_type: "hearing", // Preserving original model constraints for MVP fallback
+                category: formData.category,
+                event_date: new Date(combinedDateTimeString).toISOString(),
                 description: formData.description || undefined,
-                location: formData.location || undefined,
+                case_id: formData.case_id || undefined,
+                meeting_link: formData.category === "non-court" && formData.meeting_link ? formData.meeting_link : undefined,
             };
-            if (formData.case_id) payload.case_id = formData.case_id;
+
             await calendarApi.create(payload);
             setFormData({
                 title: "",
-                event_type: "hearing",
-                event_date: "",
+                category: "court",
                 case_id: "",
+                event_date: "",
+                start_time: "12:00",
+                end_time: "12:30",
+                meeting_link: "",
                 description: "",
-                location: "",
             });
             setShowForm(false);
             loadEvents();
         } catch (err) {
             console.error("Failed to create event:", err);
+            alert("Failed to create calendar event");
         } finally {
             setCreating(false);
         }
     };
 
-    const handleDelete = async (eventId: string) => {
-        if (!confirm("Delete this event?")) return;
-        try {
-            await calendarApi.delete(eventId);
-            loadEvents();
-        } catch (err) {
-            console.error("Failed to delete event:", err);
+    // Calendar Math Helpers
+    const handlePrevMonth = () => {
+        const prev = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
+        setSelectedDate(prev);
+    };
+
+    const handleNextMonth = () => {
+        const next = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+        setSelectedDate(next);
+    };
+
+    const handleToday = () => {
+        setSelectedDate(new Date());
+    };
+
+    const daysInMonth = (month: number, year: number) => {
+        return new Date(year, month + 1, 0).getDate();
+    };
+
+    const getCalendarDays = () => {
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const numDays = daysInMonth(month, year);
+        const prevMonthDays = daysInMonth(month - 1, year);
+
+        const days = [];
+
+        // Previous month filler days
+        for (let i = firstDay - 1; i >= 0; i--) {
+            days.push({
+                day: prevMonthDays - i,
+                isCurrentMonth: false,
+                dateObj: new Date(year, month - 1, prevMonthDays - i)
+            });
         }
+
+        // Current month days
+        for (let i = 1; i <= numDays; i++) {
+            days.push({
+                day: i,
+                isCurrentMonth: true,
+                dateObj: new Date(year, month, i)
+            });
+        }
+
+        // Next month filler days to complete rows of 7
+        const remaining = 42 - days.length; // 6 rows * 7 days
+        for (let i = 1; i <= remaining; i++) {
+            days.push({
+                day: i,
+                isCurrentMonth: false,
+                dateObj: new Date(year, month + 1, i)
+            });
+        }
+
+        return days;
     };
 
-    const formatDateTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleString("en-IN", {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
+    const calendarGrid = getCalendarDays();
+    const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD local
 
-    const eventTypeColors: Record<string, { dot: string; badge: string }> = {
-        hearing: {
-            dot: "bg-blue-500",
-            badge: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-        },
-        deadline: {
-            dot: "bg-red-500",
-            badge: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400",
-        },
-        reminder: {
-            dot: "bg-amber-500",
-            badge: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-        },
-    };
-
-    // Group events by date
-    const groupedEvents: Record<string, CalendarEventItem[]> = {};
-    events.forEach((e) => {
-        const dateKey = new Date(e.event_date).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-        });
-        if (!groupedEvents[dateKey]) groupedEvents[dateKey] = [];
-        groupedEvents[dateKey].push(e);
+    // Filter events for "Today" sidebar
+    const todaysEvents = events.filter(e => {
+        const eventDateStr = new Date(e.event_date).toLocaleDateString("en-CA");
+        return eventDateStr === todayStr;
     });
 
     return (
-        <div className="min-h-screen p-8">
-            {/* Page Header */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-                            <CalendarDays className="w-5 h-5 text-white" />
-                        </div>
-                        Calendar
-                    </h1>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 ml-[52px]">
-                        Track hearings, deadlines, and reminders
-                    </p>
+        <div className="flex h-screen bg-white">
+            {/* Sidebar */}
+            <div className="w-64 border-r border-gray-100 flex flex-col shrink-0">
+                {/* Header Logo Area */}
+                <div className="h-16 flex items-center px-6 gap-3 border-b border-transparent shrink-0 mt-2">
+                    <CalendarIcon className="w-5 h-5 text-gray-900" />
+                    <h1 className="text-xl font-semibold text-gray-900 font-serif">Calendar</h1>
                 </div>
-                <button
-                    onClick={() => setShowForm(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    New Event
-                </button>
-            </div>
 
-            {/* Filter Bar */}
-            <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-1 w-fit mb-6">
-                {["", "hearing", "deadline", "reminder"].map((f) => (
-                    <button
-                        key={f}
-                        onClick={() => setTypeFilter(f)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${typeFilter === f
-                                ? "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 shadow-sm"
-                                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                            }`}
-                    >
-                        {f === "" ? "All" : f.charAt(0).toUpperCase() + f.slice(1) + "s"}
-                    </button>
-                ))}
-            </div>
-
-            {/* Events Timeline */}
-            {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
-                </div>
-            ) : Object.keys(groupedEvents).length === 0 ? (
-                <div className="text-center py-20 text-zinc-400">
-                    <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-lg font-medium">No events scheduled</p>
-                    <p className="text-sm mt-1">Add your first event to get started</p>
-                </div>
-            ) : (
-                <div className="space-y-8">
-                    {Object.entries(groupedEvents).map(([dateKey, dateEvents]) => (
-                        <div key={dateKey}>
-                            <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
-                                {dateKey}
-                            </h3>
+                <div className="p-6 flex-1 overflow-y-auto">
+                    {/* Today's Events */}
+                    <div className="mb-8">
+                        <h3 className="text-[13px] font-medium text-gray-700 mb-3">Today&apos;s Events</h3>
+                        {todaysEvents.length === 0 ? (
+                            <div className="bg-white border border-gray-200 rounded-lg p-3 py-4 text-center">
+                                <span className="text-sm text-gray-400">No Events for Today</span>
+                            </div>
+                        ) : (
                             <div className="space-y-2">
-                                {dateEvents.map((event) => {
-                                    const colors =
-                                        eventTypeColors[event.event_type] || eventTypeColors.hearing;
-                                    return (
-                                        <div
-                                            key={event.id}
-                                            className="flex items-start justify-between bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-5 py-4 group hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-800 transition-all"
-                                        >
-                                            <div className="flex items-start gap-4">
-                                                <div
-                                                    className={`w-3 h-3 rounded-full mt-1 shrink-0 ${colors.dot}`}
-                                                />
-                                                <div>
-                                                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                                                        {event.title}
-                                                    </p>
-                                                    <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                                                        <span className="flex items-center gap-1 text-xs text-zinc-400">
-                                                            <Clock className="w-3 h-3" />
-                                                            {formatDateTime(event.event_date)}
-                                                        </span>
-                                                        <span
-                                                            className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize ${colors.badge}`}
-                                                        >
-                                                            {event.event_type}
-                                                        </span>
-                                                        {event.case_title && (
-                                                            <Link
-                                                                href={`/cases/${event.case_id}`}
-                                                                className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 transition-colors"
-                                                            >
-                                                                <Briefcase className="w-3 h-3" />
-                                                                {event.case_title}
-                                                            </Link>
-                                                        )}
-                                                        {event.location && (
-                                                            <span className="flex items-center gap-1 text-xs text-zinc-400">
-                                                                <MapPin className="w-3 h-3" />
-                                                                {event.location}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    {event.description && (
-                                                        <p className="text-xs text-zinc-400 mt-1.5">{event.description}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleDelete(event.id)}
-                                                className="p-2 text-zinc-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                                                title="Delete"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
+                                {todaysEvents.map(e => (
+                                    <div key={e.id} className="bg-gray-50 border border-gray-100 rounded-lg p-3">
+                                        <p className="text-sm font-medium text-gray-800">{e.title}</p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {new Date(e.event_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Case Filters */}
+                    <div>
+                        <h3 className="text-[13px] italic text-gray-500 mb-3">Filter events by cases</h3>
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder="Search"
+                                value={caseSearchQuery}
+                                onChange={(e) => setCaseSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-full text-sm outline-none focus:border-gray-300 transition-colors"
+                            />
+                        </div>
+                        <div className="mt-6 text-center text-gray-400 text-sm">
+                            <p>No cases</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col overflow-hidden bg-white">
+                {/* Top Navigation */}
+                <div className="h-20 flex items-center justify-between px-8 shrink-0">
+                    <div className="flex-1 max-w-2xl px-4">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search events"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-300"
+                            />
+                            <Search className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2" />
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => {
+                            setFormData(prev => ({ ...prev, event_date: new Date().toISOString().split('T')[0] }));
+                            setShowForm(true);
+                        }}
+                        className="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ml-4 shadow-sm"
+                    >
+                        <Plus className="w-4 h-4" /> Create Event
+                    </button>
+                </div>
+
+                {/* Calendar Workspace */}
+                <div className="flex-1 overflow-auto p-4 px-8 pb-8">
+                    <div className="bg-white border border-gray-200 rounded-xl h-full flex flex-col overflow-hidden">
+
+                        {/* Calendar Toolbar */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+                            <button
+                                onClick={handleToday}
+                                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                                Today
+                            </button>
+
+                            <div className="flex items-center px-4 py-2 border border-gray-200 rounded-lg gap-4">
+                                <button onClick={handlePrevMonth} className="text-gray-400 hover:text-gray-600">
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-sm font-bold text-gray-800 min-w-[120px] text-center">
+                                    {selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                </span>
+                                <button onClick={handleNextMonth} className="text-gray-400 hover:text-gray-600">
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                {["Day", "Week", "Month", "Year"].map(view => (
+                                    <button
+                                        key={view}
+                                        onClick={() => setCurrentView(view)}
+                                        className={`px-4 py-2 text-sm font-medium transition-colors ${currentView === view
+                                            ? "bg-gray-100 text-gray-800 font-semibold"
+                                            : "text-gray-500 hover:text-gray-700 hover:bg-gray-50 bg-white"
+                                            }`}
+                                    >
+                                        {view}
+                                    </button>
+                                ))}
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
 
-            {/* New Event Modal */}
+                        {/* Calendar Header Row */}
+                        <div className="grid grid-cols-7 border-b border-gray-100 shrink-0 bg-white">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                <div key={day} className="py-3 text-center text-[13px] font-semibold text-gray-600">
+                                    {day}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Calendar Grid Matrix */}
+                        <div className="flex-1 grid grid-cols-7 grid-rows-6">
+                            {calendarGrid.map((dayObj, idx) => {
+                                const dateStrKey = dayObj.dateObj.toLocaleDateString("en-CA");
+                                const isToday = dateStrKey === todayStr;
+
+                                // Fetch any events falling on this cell
+                                const dayEvents = events.filter(e => {
+                                    return new Date(e.event_date).toLocaleDateString("en-CA") === dateStrKey;
+                                });
+
+                                return (
+                                    <div
+                                        key={idx}
+                                        onClick={() => {
+                                            setFormData(prev => ({ ...prev, event_date: dateStrKey }));
+                                            setShowForm(true);
+                                        }}
+                                        className={`min-h-[100px] border-r border-b border-gray-100 p-2 cursor-pointer transition-colors
+                                            ${idx % 7 === 6 ? 'border-r-0' : ''} 
+                                            ${!dayObj.isCurrentMonth ? 'bg-gray-50/50' : 'hover:bg-gray-50'}
+                                        `}
+                                    >
+                                        <div className="flex justify-end mb-1">
+                                            <span className={`text-[13px] font-medium w-6 h-6 flex items-center justify-center rounded
+                                                ${!dayObj.isCurrentMonth ? 'text-gray-300' : 'text-gray-700'}
+                                                ${isToday ? 'bg-blue-600 text-white' : ''}
+                                            `}>
+                                                {dayObj.day}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-1 overflow-y-auto max-h-[80px]">
+                                            {dayEvents.slice(0, 3).map(event => (
+                                                <div
+                                                    key={event.id}
+                                                    title={event.title}
+                                                    className={`px-2 py-1 text-xs truncate rounded border
+                                                        ${event.category === 'non-court'
+                                                            ? 'bg-orange-50 text-orange-700 border-orange-100'
+                                                            : 'bg-blue-50 text-blue-700 border-blue-100'}
+                                                    `}
+                                                >
+                                                    {new Date(event.event_date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} {event.title}
+                                                </div>
+                                            ))}
+                                            {dayEvents.length > 3 && (
+                                                <div className="text-[10px] text-gray-500 font-medium px-1">
+                                                    +{dayEvents.length - 3} more
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Create Event Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-zinc-200 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
-                            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                New Event
-                            </h2>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col overflow-hidden relative border border-gray-100">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4">
+                            <h2 className="text-lg font-bold text-gray-900 font-serif">Create New Event</h2>
                             <button
                                 onClick={() => setShowForm(false)}
-                                className="text-zinc-400 hover:text-zinc-600"
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <form onSubmit={handleCreate} className="p-6 space-y-4">
+
+                        {/* Body */}
+                        <form onSubmit={handleCreate} className="px-6 pb-6 space-y-4">
+
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                                    Title *
-                                </label>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1 ml-1">Event Name*</label>
                                 <input
                                     type="text"
                                     required
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="e.g., Final Arguments"
-                                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm outline-none focus:border-gray-800 transition-colors"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+
+                            <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, category: "court" })}
+                                    className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${formData.category === "court"
+                                        ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                                        : "text-gray-500 hover:text-gray-700"
+                                        }`}
+                                >
+                                    Court hearing
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, category: "non-court" })}
+                                    className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${formData.category === "non-court"
+                                        ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                                        : "text-gray-500 hover:text-gray-700"
+                                        }`}
+                                >
+                                    Non Court event
+                                </button>
+                            </div>
+
+                            {formData.category === "non-court" && (
                                 <div>
-                                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                                        Type
-                                    </label>
                                     <select
-                                        value={formData.event_type}
-                                        onChange={(e) => setFormData({ ...formData, event_type: e.target.value })}
-                                        className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                                        value={formData.meeting_link}
+                                        onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-gray-800 text-gray-700"
                                     >
-                                        <option value="hearing">Hearing</option>
-                                        <option value="deadline">Deadline</option>
-                                        <option value="reminder">Reminder</option>
+                                        <option value="" disabled>Add Meeting Link</option>
+                                        <option value="https://meet.google.com/new">Google Meet Integration</option>
+                                        <option value="https://zoom.us/new">Zoom Integration</option>
+                                        <option value="Custom">Custom Link (Type in description)</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                                        Date & Time *
-                                    </label>
-                                    <input
-                                        type="datetime-local"
-                                        required
-                                        value={formData.event_date}
-                                        onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
-                                        className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
-                                    />
-                                </div>
-                            </div>
+                            )}
+
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                                    Link to Case
-                                </label>
                                 <select
                                     value={formData.case_id}
                                     onChange={(e) => setFormData({ ...formData, case_id: e.target.value })}
-                                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-gray-800 text-gray-500"
                                 >
-                                    <option value="">No case linked</option>
+                                    <option value="">Select Case</option>
                                     {cases.map((c) => (
                                         <option key={c.id} value={c.id}>
                                             {c.title}
@@ -335,45 +437,87 @@ export default function CalendarPage() {
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                                    Location
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.location}
-                                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                    placeholder="e.g., Courtroom 3, Saket Courts"
-                                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
-                                />
+                                <div className="relative">
+                                    <CalendarIcon className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="date"
+                                        required
+                                        value={formData.event_date}
+                                        onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-800 rounded-xl text-sm outline-none focus:ring-1 focus:ring-gray-800"
+                                    />
+                                </div>
                             </div>
+
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 relative">
+                                    <select
+                                        value={formData.start_time}
+                                        onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-gray-800 appearance-none text-gray-700"
+                                    >
+                                        <option value="09:00">09:00 AM</option>
+                                        <option value="09:30">09:30 AM</option>
+                                        <option value="10:00">10:00 AM</option>
+                                        <option value="10:30">10:30 AM</option>
+                                        <option value="11:00">11:00 AM</option>
+                                        <option value="11:30">11:30 AM</option>
+                                        <option value="12:00">12:00 PM</option>
+                                        <option value="12:30">12:30 PM</option>
+                                        <option value="13:00">01:00 PM</option>
+                                        <option value="13:30">01:30 PM</option>
+                                        <option value="14:00">02:00 PM</option>
+                                    </select>
+                                </div>
+                                <span className="text-gray-400">—</span>
+                                <div className="flex-1 relative">
+                                    <select
+                                        value={formData.end_time}
+                                        onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-gray-800 appearance-none text-gray-700"
+                                    >
+                                        <option value="09:30">09:30 AM</option>
+                                        <option value="10:00">10:00 AM</option>
+                                        <option value="10:30">10:30 AM</option>
+                                        <option value="11:00">11:00 AM</option>
+                                        <option value="11:30">11:30 AM</option>
+                                        <option value="12:00">12:00 PM</option>
+                                        <option value="12:30">12:30 PM</option>
+                                        <option value="13:00">01:00 PM</option>
+                                        <option value="13:30">01:30 PM</option>
+                                        <option value="14:00">02:00 PM</option>
+                                        <option value="14:30">02:30 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                                    Description
-                                </label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={2}
-                                    placeholder="Additional notes..."
-                                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                                    rows={3}
+                                    placeholder="Description"
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm resize-none outline-none focus:border-gray-800"
                                 />
                             </div>
-                            <div className="flex justify-end gap-3 pt-2">
+
+                            <div className="flex justify-between gap-3 pt-2">
                                 <button
                                     type="button"
                                     onClick={() => setShowForm(false)}
-                                    className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
+                                    className="flex-1 py-3 text-sm font-semibold text-gray-800 border border-gray-800 rounded-xl hover:bg-gray-50 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors"
                                 >
-                                    {creating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                    Create Event
+                                    {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                    Add Event
                                 </button>
                             </div>
                         </form>
